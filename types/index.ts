@@ -5,7 +5,7 @@ export type User = {
   phone: string;
   role: 'owner' | 'client';
   avatarUrl: string;
-  passwordHash: string; // For mock auth
+  password: string;
 };
 
 export type Vehicle = {

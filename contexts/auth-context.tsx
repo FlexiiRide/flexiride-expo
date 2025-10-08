@@ -1,48 +1,12 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { User } from '@/types';
+import Constants from 'expo-constants';
 
-// Mock user data
-export const mockUsers: User[] = [
-  {
-    id: 'u_1',
-    name: 'Alice Owner',
-    email: 'owner@example.com',
-    phone: '+94123456789',
-    role: 'owner',
-    avatarUrl: 'https://picsum.photos/seed/u1/100/100',
-    passwordHash: 'password123',
-  },
-  {
-    id: 'u_2',
-    name: 'Bob Client',
-    email: 'client@example.com',
-    phone: '+94987654321',
-    role: 'client',
-    avatarUrl: 'https://picsum.photos/seed/u2/100/100',
-    passwordHash: 'password123',
-  },
-  {
-    id: 'u_3',
-    name: 'Charlie Owner',
-    email: 'charlie@example.com',
-    phone: '+94112233445',
-    role: 'owner',
-    avatarUrl: 'https://picsum.photos/seed/u3/100/100',
-    passwordHash: 'password123',
-  },
-  {
-    id: 'u_4',
-    name: 'Diana Client',
-    email: 'diana@example.com',
-    phone: '+94556677889',
-    role: 'client',
-    avatarUrl: 'https://picsum.photos/seed/u4/100/100',
-    passwordHash: 'password123',
-  },
-];
+const API_BASE_URL = Constants.expoConfig?.extra?.API_BASE_URL
 
 interface AuthContextType {
   user: User | null;
+  token: string | null;
   signIn: (email: string, password: string) => Promise<boolean>;
   signOut: () => void;
   signUp: (user: Omit<User, 'id'>) => Promise<boolean>;
@@ -50,31 +14,81 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
+export const AuthProvider = async ({ children }: { children: ReactNode }) => {
+
   const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+
 
   const signIn = async (email: string, password: string) => {
-    const foundUser = mockUsers.find(u => u.email === email && u.passwordHash === password);
-    if (foundUser) {
-      setUser(foundUser);
+
+    try {
+      const res = await fetch(`${API_BASE_URL}auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+        credentials: 'include', // if backend sets cookies
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        console.error('Login error:', errorData);
+        return false;
+        //return { errors: { server: [errorData.message || 'Invalid credentials'] } };
+      }
+
+      // Handle JWT
+      const { token: receiveToken, user: receiveUser } = await res.json();
+      setUser(receiveUser);
+      setToken(receiveToken);
       return true;
+
+    } catch (error) {
+      console.error('Login error:', error);
+      //return { errors: { server: ['Something went wrong.'] } };
+      return false;
     }
-    return false;
+
+
   };
 
   const signOut = () => {
     setUser(null);
+    setToken(null);
   };
 
   const signUp = async (newUser: Omit<User, 'id'>) => {
-    const newUserWithId = { ...newUser, id: `u_${mockUsers.length + 1}` };
-    mockUsers.push(newUserWithId);
-    setUser(newUserWithId);
-    return true;
+
+    try {
+      const res = await fetch(`${API_BASE_URL}auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newUser.name, email: newUser.email, password: newUser.password }),
+        credentials: 'include', // if backend sets cookies
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        console.error('Login error:', errorData);
+        return false;
+      }
+
+      // Handle JWT
+      const { token: receiveToken, user: newUserWithId } = await res.json();
+      setUser(newUserWithId);
+      setToken(receiveToken);
+      return true;
+
+    } catch (error) {
+      console.error('Login error:', error);
+      //return { errors: { server: ['Something went wrong.'] } };
+      return false;
+    }
+
   };
 
   return (
-    <AuthContext.Provider value={{ user, signIn, signOut, signUp }}>
+    <AuthContext.Provider value={{ user, token, signIn, signOut, signUp }}>
       {children}
     </AuthContext.Provider>
   );

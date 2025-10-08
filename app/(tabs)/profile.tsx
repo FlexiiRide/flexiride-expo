@@ -1,110 +1,115 @@
 import React from 'react';
-import { View, StyleSheet, Image } from 'react-native';
+import { View, StyleSheet, Image, ScrollView } from 'react-native';
 import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/auth-context';
 import { useRouter } from 'expo-router';
+import { User } from '@/types';
 
-const ClientProfile = ({ user, signOut }) => (
+const ClientProfile = ({ user, signOut }: { user: User, signOut: () => void }) => (
     <ThemedView style={styles.container}>
-        <View style={styles.header}>
-            <Image
-                source={{ uri: user.avatarUrl }}
-                style={styles.avatar}
-            />
-            <ThemedText type="title" style={styles.name}>Welcome back, {user.name.split(' ')[0]}!</ThemedText>
-            <ThemedText type="subtitle">Here's what's happening with your account.</ThemedText>
-        </View>
-
-        <Card style={styles.card}>
-            <ThemedText type="defaultSemiBold">Your Bookings</ThemedText>
-            <View style={styles.bookingContainer}>
-                <View style={styles.bookingItem}>
-                    <View>
-                        <ThemedText>Vehicle ID: v_100</ThemedText>
-                        <ThemedText style={styles.bookingDate}>September 22nd, 2025 9:00 AM - 3:00 PM</ThemedText>
-                    </View>
-                    <View style={styles.bookingStatusContainer}>
-                        <ThemedText style={[styles.bookingStatus, styles.approved]}>Approved</ThemedText>
-                        <ThemedText style={styles.bookingPrice}>$39.00</ThemedText>
-                    </View>
-                </View>
-                <View style={styles.bookingItem}>
-                    <View>
-                        <ThemedText>Vehicle ID: v_102</ThemedText>
-                        <ThemedText style={styles.bookingDate}>September 27th, 2025 10:00 AM - 6:00 PM</ThemedText>
-                    </View>
-                    <View style={styles.bookingStatusContainer}>
-                        <ThemedText style={[styles.bookingStatus, styles.rejected]}>Rejected</ThemedText>
-                        <ThemedText style={styles.bookingPrice}>$70.00</ThemedText>
-                    </View>
-                </View>
+        <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
+            <View style={styles.header}>
+                <Image
+                    source={{ uri: user.avatarUrl }}
+                    style={styles.avatar}
+                />
+                <ThemedText type="title" style={styles.name}>Welcome back, {user.name.split(' ')[0]}!</ThemedText>
+                <ThemedText type="subtitle">Here&apos;s what&apos;s happening with your account.</ThemedText>
             </View>
-        </Card>
 
-        <Button title="Logout" onPress={signOut} variant='secondary' />
+            <Card style={styles.card}>
+                <ThemedText type="defaultSemiBold">Your Bookings</ThemedText>
+                <View style={styles.bookingContainer}>
+                    <View style={styles.bookingItem}>
+                        <View>
+                            <ThemedText>Vehicle ID: v_100</ThemedText>
+                            <ThemedText style={styles.bookingDate}>September 22nd, 2025 9:00 AM - 3:00 PM</ThemedText>
+                        </View>
+                        <View style={styles.bookingStatusContainer}>
+                            <ThemedText style={[styles.bookingStatus, styles.approved]}>Approved</ThemedText>
+                            <ThemedText style={styles.bookingPrice}>$39.00</ThemedText>
+                        </View>
+                    </View>
+                    <View style={styles.bookingItem}>
+                        <View>
+                            <ThemedText>Vehicle ID: v_102</ThemedText>
+                            <ThemedText style={styles.bookingDate}>September 27th, 2025 10:00 AM - 6:00 PM</ThemedText>
+                        </View>
+                        <View style={styles.bookingStatusContainer}>
+                            <ThemedText style={[styles.bookingStatus, styles.rejected]}>Rejected</ThemedText>
+                            <ThemedText style={styles.bookingPrice}>$70.00</ThemedText>
+                        </View>
+                    </View>
+                </View>
+            </Card>
+
+            <Button title="Logout" onPress={signOut} variant='secondary' />
+        </ScrollView>
     </ThemedView>
 );
 
-const OwnerProfile = ({ user, signOut }) => (
+const OwnerProfile = ({ user, signOut }: { user: User, signOut: () => void }) => (
     <ThemedView style={styles.container}>
-        <View style={styles.header}>
-            <Image
-                source={{ uri: user.avatarUrl }}
-                style={styles.avatar}
-            />
-            <ThemedText type="title" style={styles.name}>Welcome back, {user.name.split(' ')[0]}!</ThemedText>
-            <ThemedText type="subtitle">Here's what's happening with your account.</ThemedText>
-        </View>
-
-        <Card style={styles.card}>
-            <ThemedText type="defaultSemiBold">Your Booking Requests</ThemedText>
-            <View style={styles.bookingContainer}>
-                <View style={styles.bookingItem}>
-                    <View>
-                        <ThemedText>Vehicle ID: v_100</ThemedText>
-                        <ThemedText style={styles.bookingDate}>September 22nd, 2025 9:00 AM - 3:00 PM</ThemedText>
-                    </View>
-                    <View style={styles.bookingStatusContainer}>
-                        <ThemedText style={[styles.bookingStatus, styles.approved]}>Approved</ThemedText>
-                        <ThemedText style={styles.bookingPrice}>$39.00</ThemedText>
-                    </View>
-                </View>
-                <View style={styles.bookingItem}>
-                    <View>
-                        <ThemedText>Vehicle ID: v_102</ThemedText>
-                        <ThemedText style={styles.bookingDate}>September 27th, 2025 10:00 AM - 6:00 PM</ThemedText>
-                    </View>
-                    <View style={styles.bookingStatusContainer}>
-                        <ThemedText style={[styles.bookingStatus, styles.rejected]}>Rejected</ThemedText>
-                        <ThemedText style={styles.bookingPrice}>$70.00</ThemedText>
-                    </View>
-                </View>
-                <View style={styles.bookingItem}>
-                    <View>
-                        <ThemedText>Vehicle ID: v_100</ThemedText>
-                        <ThemedText style={styles.bookingDate}>September 25th, 2025 11:00 AM - 1:00 PM</ThemedText>
-                    </View>
-                    <View style={styles.bookingStatusContainer}>
-                        <ThemedText style={[styles.bookingStatus, styles.cancelled]}>Cancelled</ThemedText>
-                        <ThemedText style={styles.bookingPrice}>$13.00</ThemedText>
-                    </View>
-                </View>
+        <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
+            <View style={styles.header}>
+                <Image
+                    source={{ uri: user.avatarUrl }}
+                    style={styles.avatar}
+                />
+                <ThemedText type="title" style={styles.name}>Welcome back, {user.name.split(' ')[0]}!</ThemedText>
+                <ThemedText type="subtitle">Here&apos;s what&apos;s happening with your account.</ThemedText>
             </View>
-        </Card>
 
-        <Card style={styles.card}>
-            <ThemedText type="defaultSemiBold">Your Vehicles</ThemedText>
-            <View style={styles.vehicleContainer}>
-                <Image source={{ uri: 'https://images.unsplash.com/photo-1520342868574-5fa3804e551c?ixlib=rb-0.3.5&ixid=eyJhcHBfaWQiOjEyMDd9&s=6ff92caffcdd63681a35134a6770ed3b&auto=format&fit=crop&w=1951&q=80' }} style={styles.vehicleImage} />
-                <Image source={{ uri: 'https://images.unsplash.com/photo-1522205408450-add114ad53fe?ixlib=rb-0.3.5&ixid=eyJhcHBfaWQiOjEyMDd9&s=368f45b0888aeb0b7b08e3a1084d3ede&auto=format&fit=crop&w=1950&q=80' }} style={styles.vehicleImage} />
-                <Image source={{ uri: 'https://images.unsplash.com/photo-1519125323398-675f0ddb6308?ixlib=rb-0.3.5&ixid=eyJhcHBfaWQiOjEyMDd9&s=94a1e718d89ca60a6337a6008341ca50&auto=format&fit=crop&w=1950&q=80' }} style={styles.vehicleImage} />
-            </View>
-        </Card>
+            <Card style={styles.card}>
+                <ThemedText type="defaultSemiBold">Your Booking Requests</ThemedText>
+                <View style={styles.bookingContainer}>
+                    <View style={styles.bookingItem}>
+                        <View>
+                            <ThemedText>Vehicle ID: v_100</ThemedText>
+                            <ThemedText style={styles.bookingDate}>September 22nd, 2025 9:00 AM - 3:00 PM</ThemedText>
+                        </View>
+                        <View style={styles.bookingStatusContainer}>
+                            <ThemedText style={[styles.bookingStatus, styles.approved]}>Approved</ThemedText>
+                            <ThemedText style={styles.bookingPrice}>$39.00</ThemedText>
+                        </View>
+                    </View>
+                    <View style={styles.bookingItem}>
+                        <View>
+                            <ThemedText>Vehicle ID: v_102</ThemedText>
+                            <ThemedText style={styles.bookingDate}>September 27th, 2025 10:00 AM - 6:00 PM</ThemedText>
+                        </View>
+                        <View style={styles.bookingStatusContainer}>
+                            <ThemedText style={[styles.bookingStatus, styles.rejected]}>Rejected</ThemedText>
+                            <ThemedText style={styles.bookingPrice}>$70.00</ThemedText>
+                        </View>
+                    </View>
+                    <View style={styles.bookingItem}>
+                        <View>
+                            <ThemedText>Vehicle ID: v_100</ThemedText>
+                            <ThemedText style={styles.bookingDate}>September 25th, 2025 11:00 AM - 1:00 PM</ThemedText>
+                        </View>
+                        <View style={styles.bookingStatusContainer}>
+                            <ThemedText style={[styles.bookingStatus, styles.cancelled]}>Cancelled</ThemedText>
+                            <ThemedText style={styles.bookingPrice}>$13.00</ThemedText>
+                        </View>
+                    </View>
+                </View>
+            </Card>
 
-        <Button title="Logout" onPress={signOut} variant='secondary' />
+            <Card style={styles.card}>
+                <ThemedText type="defaultSemiBold">Your Vehicles</ThemedText>
+                <View style={styles.vehicleContainer}>
+                    <Image source={{ uri: 'https://images.unsplash.com/photo-1520342868574-5fa3804e551c?ixlib=rb-0.3.5&ixid=eyJhcHBfaWQiOjEyMDd9&s=6ff92caffcdd63681a35134a6770ed3b&auto=format&fit=crop&w=1951&q=80' }} style={styles.vehicleImage} />
+                    <Image source={{ uri: 'https://images.unsplash.com/photo-1522205408450-add114ad53fe?ixlib=rb-0.3.5&ixid=eyJhcHBfaWQiOjEyMDd9&s=368f45b0888aeb0b7b08e3a1084d3ede&auto=format&fit=crop&w=1950&q=80' }} style={styles.vehicleImage} />
+                    <Image source={{ uri: 'https://images.unsplash.com/photo-1519125323398-675f0ddb6308?ixlib=rb-0.3.5&ixid=eyJhcHBfaWQiOjEyMDd9&s=94a1e718d89ca60a6337a6008341ca50&auto=format&fit=crop&w=1950&q=80' }} style={styles.vehicleImage} />
+                </View>
+            </Card>
+
+            <Button title="Logout" onPress={signOut} variant='secondary' />
+        </ScrollView>
     </ThemedView>
 );
 
