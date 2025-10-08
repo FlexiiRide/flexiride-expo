@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
 import { Input } from '@/components/ui/input';
@@ -20,56 +20,58 @@ export default function SignUpScreen() {
             Alert.alert("Passwords don't match");
             return;
         }
-        signUp({ 
-            name, 
-            email, 
-            passwordHash: password, // Using password as passwordHash for mock auth
-            role: 'client', 
+        signUp({
+            name,
+            email,
+            password, // Using password as passwordHash for mock auth
+            role: 'client',
             phone: '+94123456789', // Dummy phone number
-            avatarUrl: `https://i.pravatar.cc/150?u=${email}` 
+            avatarUrl: `https://i.pravatar.cc/150?u=${email}`
         });
     };
 
     return (
-        <ThemedView style={styles.container}>
-            <ThemedText type="title" style={styles.title}>Create Account</ThemedText>
-            <ThemedText style={styles.subtitle}>Sign up to get started</ThemedText>
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={64}>
+            <ThemedView style={styles.container}>
+                <ThemedText type="title" style={styles.title}>Create Account</ThemedText>
+                <ThemedText style={styles.subtitle}>Sign up to get started</ThemedText>
 
-            <View style={styles.formContainer}>
-                <Input 
-                    placeholder="Full Name" 
-                    value={name} 
-                    onChangeText={setName} 
-                />
-                <Input 
-                    placeholder="Email" 
-                    keyboardType="email-address" 
-                    value={email} 
-                    onChangeText={setEmail} 
-                    autoCapitalize="none"
-                />
-                <Input 
-                    placeholder="Password" 
-                    secureTextEntry 
-                    value={password} 
-                    onChangeText={setPassword} 
-                />
-                <Input 
-                    placeholder="Confirm Password" 
-                    secureTextEntry 
-                    value={confirmPassword} 
-                    onChangeText={setConfirmPassword} 
-                />
-                <Button title="Sign Up" onPress={handleSignUp} />
-            </View>
+                <View style={styles.formContainer}>
+                    <Input
+                        placeholder="Full Name"
+                        value={name}
+                        onChangeText={setName}
+                    />
+                    <Input
+                        placeholder="Email"
+                        keyboardType="email-address"
+                        value={email}
+                        onChangeText={setEmail}
+                        autoCapitalize="none"
+                    />
+                    <Input
+                        placeholder="Password"
+                        secureTextEntry
+                        value={password}
+                        onChangeText={setPassword}
+                    />
+                    <Input
+                        placeholder="Confirm Password"
+                        secureTextEntry
+                        value={confirmPassword}
+                        onChangeText={setConfirmPassword}
+                    />
+                    <Button title="Sign Up" onPress={handleSignUp} />
+                </View>
 
-            <View style={styles.footer}>
-                <ThemedText>Already have an account? </ThemedText>
-                <TouchableOpacity onPress={() => router.push('/sign-in')}>
-                    <ThemedText type="link">Sign In</ThemedText>
-                </TouchableOpacity>
-            </View>
-        </ThemedView>
+                <View style={styles.footer}>
+                    <ThemedText>Already have an account? </ThemedText>
+                    <TouchableOpacity onPress={() => router.push('/sign-in')}>
+                        <ThemedText type="link">Sign In</ThemedText>
+                    </TouchableOpacity>
+                </View>
+            </ThemedView>
+        </KeyboardAvoidingView>
     );
 }
 
