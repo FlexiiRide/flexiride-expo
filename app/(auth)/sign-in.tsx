@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
 import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/auth-context';
-import React from 'react';
 
 export default function SignInScreen() {
     const router = useRouter();
@@ -42,7 +41,7 @@ export default function SignInScreen() {
                 </View>
 
                 <View style={styles.footer}>
-                    <ThemedText>Don't have an account? </ThemedText>
+                    <ThemedText>Don&apos;t have an account? </ThemedText>
                     <TouchableOpacity onPress={() => router.push('/sign-up')}>
                         <ThemedText type="link">Sign Up</ThemedText>
                     </TouchableOpacity>

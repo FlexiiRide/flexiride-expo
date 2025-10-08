@@ -1,4 +1,4 @@
-import { Image, StyleSheet, Platform, View, TextInput } from "react-native";
+import { Image, StyleSheet, View } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { DateRangePicker } from "@/components/date-range-picker";
 import { useRouter } from "expo-router";
+import React from "react";
 
 const popularVehicles: Vehicle[] = [
   {
@@ -76,7 +77,7 @@ export default function HomeScreen() {
           icon={<IconSymbol name="magnifyingglass" color={""} />}
         />
         <DateRangePicker />
-        <Button title="Search" onPress={() => {}} />
+        <Button title="Search" onPress={() => { }} />
       </View>
       <ThemedView style={styles.popularVehiclesContainer}>
         <ThemedText type="subtitle">Popular Vehicles</ThemedText>
