@@ -5,7 +5,7 @@ import { ThemedText } from "@/components/themed-text";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Vehicle } from "@/types";
-
+import { useThemeColor } from '@/hooks/use-theme-color';
 const allVehicles: Vehicle[] = [
   {
     id: "1",
@@ -84,6 +84,7 @@ const allVehicles: Vehicle[] = [
 export default function ExploreScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredVehicles, setFilteredVehicles] = useState(allVehicles);
+  const backgroundColor = useThemeColor({}, 'background');
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
@@ -105,22 +106,22 @@ export default function ExploreScreen() {
   );
 
   return (
-    <ThemedView style={styles.container}>
-      <ThemedText type="title" style={styles.title}>
-        Explore
-      </ThemedText>
-      <Input
-        placeholder="Search for a vehicle..."
-        value={searchQuery}
-        onChangeText={handleSearch}
-      />
-      <FlatList
-        data={filteredVehicles}
-        renderItem={renderVehicle}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContainer}
-      />
-    </ThemedView>
+      <ThemedView style={[styles.container, { backgroundColor }]}>
+        <ThemedText type="title" style={styles.title}>
+          Explore
+        </ThemedText>
+        <Input
+          placeholder="Search for a vehicle..."
+          value={searchQuery}
+          onChangeText={handleSearch}
+        />
+        <FlatList
+          data={filteredVehicles}
+          renderItem={renderVehicle}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContainer}
+        />
+      </ThemedView>
   );
 }
 

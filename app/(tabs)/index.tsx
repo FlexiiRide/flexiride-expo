@@ -1,5 +1,5 @@
-import { Image, StyleSheet, View } from "react-native";
-
+import { Image, StyleSheet, Platform, View, TextInput } from "react-native";
+import { useThemeColor } from "@/hooks/use-theme-color";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import ParallaxScrollView from "@/components/parallax-scroll-view";
@@ -39,22 +39,26 @@ const getPopularVehicles = async (token: string): Promise<Vehicle[] | null> => {
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { token } = useAuth();
+  const backgroundColor = useThemeColor({}, "background");
 
+  const { accessToken } = useAuth();
+  const [loadingVehicle, setLoadingVehicle] = useState(false)
   const [popularVehicles, setPopularVehicles] = useState<Vehicle[]>([]);
 
   useEffect(() => {
-    if (!token) return;
+    if (!accessToken) return;
 
-    getPopularVehicles(token).then(result => {
+    setLoadingVehicle(true)
+    getPopularVehicles(accessToken).then(result => {
       setPopularVehicles(result || []);
     });
+    setLoadingVehicle(false)
   }
-    , [token]);
+    , [accessToken]);
 
   return (
     <ParallaxScrollView
-      headerBackgroundColor={{ light: "#FFFFFF", dark: "#1D3D47" }}
+      headerBackgroundColor={{ light: "#FFFFFF", dark: "#000000ff" }}
       headerImage={
         <Image
           source={{
@@ -64,10 +68,10 @@ export default function HomeScreen() {
         />
       }
     >
-      <ThemedView style={styles.titleContainer}>
+      <ThemedView style={[styles.searchContainer, { backgroundColor }]}>
         <ThemedText type="title">Find Your Perfect Ride, Right Now.</ThemedText>
       </ThemedView>
-      <View style={styles.searchContainer}>
+      <View style={[styles.searchContainer, { backgroundColor }]}>
         <Input
           placeholder="Enter a location"
           icon={<IconSymbol name="magnifyingglass" color={""} />}
@@ -77,7 +81,7 @@ export default function HomeScreen() {
       </View>
       <ThemedView style={styles.popularVehiclesContainer}>
         <ThemedText type="subtitle">Popular Vehicles</ThemedText>
-        {popularVehicles && popularVehicles.map((vehicle) => (
+        {loadingVehicle ? <ThemedText>Loading</ThemedText> : popularVehicles && popularVehicles.map((vehicle) => (
           <Card
             key={vehicle.id}
             onPress={() => router.push(`/vehicle/${vehicle.id}`)}
