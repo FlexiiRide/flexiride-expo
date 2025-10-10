@@ -10,51 +10,44 @@ import { Input } from "@/components/ui/input";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { DateRangePicker } from "@/components/date-range-picker";
 import { useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
+import { useAuth } from "@/contexts/auth-context";
+import { authenticatedFetch } from "@/lib/authFetch";
 
-const popularVehicles: Vehicle[] = [
-  {
-    id: "1",
-    ownerId: "1",
-    title: "Toyota Prius 2019",
-    type: "car",
-    pricePerHour: 6.5,
-    pricePerDay: 50,
-    images: [
-      "https://tse3.mm.bing.net/th/id/OIP.20PjfVQuasP1aj1VyEqhrwHaFj?rs=1&pid=ImgDetMain&o=7&rm=3",
-    ],
-    location: {
-      address: "Colombo 7, Sri Lanka",
-      lat: 6.902,
-      lng: 79.865,
-    },
-    availableRanges: [],
-    description: "A very good car",
-    status: "active",
-  },
-  {
-    id: "2",
-    ownerId: "2",
-    title: "Honda Activa 2020",
-    type: "bike",
-    pricePerHour: 2.5,
-    pricePerDay: 20,
-    images: [
-      "https://images.carandbike.com/cms/articles/2024/2/3211549/Honda_Activa_9f47b6cd52.jpg",
-    ],
-    location: {
-      address: "Colombo 5, Sri Lanka",
-      lat: 6.884,
-      lng: 79.863,
-    },
-    availableRanges: [],
-    description: "A very good bike",
-    status: "active",
-  },
-];
+const getPopularVehicles = async (token: string): Promise<Vehicle[] | null> => {
+  try {
+    const response = await authenticatedFetch("vehicles", token, {
+      method: "GET",
+      credentials: "include", // if backend sets cookies
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("Error getting data:", errorData);
+      return null;
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Error calling fetch:", error);
+    return null;
+  }
+};
 
 export default function HomeScreen() {
   const router = useRouter();
   const backgroundColor = useThemeColor({}, "background");
+  const { token } = useAuth();
+
+  const [popularVehicles, setPopularVehicles] = useState<Vehicle[]>([]);
+
+  useEffect(() => {
+    if (!token) return;
+
+    getPopularVehicles(token).then((result) => {
+      setPopularVehicles(result || []);
+    });
+  }, [token]);
 
   return (
     <ParallaxScrollView
@@ -81,22 +74,23 @@ export default function HomeScreen() {
       </View>
       <ThemedView style={styles.popularVehiclesContainer}>
         <ThemedText type="subtitle">Popular Vehicles</ThemedText>
-        {popularVehicles.map((vehicle) => (
-          <Card
-            key={vehicle.id}
-            onPress={() => router.push(`/vehicle/${vehicle.id}`)}
-            style={styles.vehicleCard}
-          >
-            <Image
-              source={{ uri: vehicle.images[0] }}
-              style={styles.vehicleImage}
-            />
-            <View style={styles.vehicleDetails}>
-              <ThemedText type="defaultSemiBold">{vehicle.title}</ThemedText>
-              <ThemedText>${vehicle.pricePerDay}/day</ThemedText>
-            </View>
-          </Card>
-        ))}
+        {popularVehicles &&
+          popularVehicles.map((vehicle) => (
+            <Card
+              key={vehicle.id}
+              onPress={() => router.push(`/vehicle/${vehicle.id}`)}
+              style={styles.vehicleCard}
+            >
+              <Image
+                source={{ uri: vehicle.images[0] }}
+                style={styles.vehicleImage}
+              />
+              <View style={styles.vehicleDetails}>
+                <ThemedText type="defaultSemiBold">{vehicle.title}</ThemedText>
+                <ThemedText>${vehicle.pricePerDay}/day</ThemedText>
+              </View>
+            </Card>
+          ))}
       </ThemedView>
     </ParallaxScrollView>
   );
