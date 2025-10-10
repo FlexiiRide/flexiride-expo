@@ -13,7 +13,7 @@ import { getBookings, getVehicles, getUsers } from "../../lib/api";
 import { useRouter } from "expo-router";
 
 export const DashboardClient: React.FC = () => {
-  const { user } = useAuth();
+  const { user, accessToken } = useAuth();
   const router = useRouter();
 
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -39,16 +39,21 @@ export const DashboardClient: React.FC = () => {
           const ownerBookings = await getBookings({ ownerId: user.id });
           setBookings(ownerBookings);
 
-          const vehicles = await getVehicles({ ownerId: user.id });
+          const vehicles = await getVehicles({
+            ownerId: user.id,
+            token: accessToken!,
+          });
           setMyVehicles(vehicles);
 
           const clientsData = await getUsers({ role: "client" });
           setClients(clientsData);
         } else {
-          const clientBookings = await getBookings({ clientId: user?.id });
+          const clientBookings = await getBookings({
+            clientId: user?.id,
+          });
           setBookings(clientBookings);
 
-          const vehicles = await getVehicles();
+          const vehicles = await getVehicles({ token: accessToken! });
           setMyVehicles(vehicles);
 
           const ownersData = await getUsers({ role: "owner" });

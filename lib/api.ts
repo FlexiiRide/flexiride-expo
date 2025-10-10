@@ -1,4 +1,5 @@
 import { type User, type Vehicle, type Booking } from "../types/index";
+import { getMyVehicles } from "./vehicleFetch";
 
 const mockUsers: User[] = [
   {
@@ -288,9 +289,10 @@ export async function getVehicles(filters?: {
   limit?: number;
   type?: "car" | "bike";
   ownerId?: string;
+  token: string;
 }): Promise<Vehicle[]> {
   await delay(300);
-  let vehicles = mockVehicles as Vehicle[];
+  let vehicles = (await getMyVehicles(filters?.token!)).data as Vehicle[];
 
   if (filters?.type) {
     vehicles = vehicles.filter((v) => v.type === filters.type);
