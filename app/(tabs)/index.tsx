@@ -15,27 +15,24 @@ import { useAuth } from "@/contexts/auth-context";
 import { authenticatedFetch } from "@/lib/authFetch";
 
 const getPopularVehicles = async (token: string): Promise<Vehicle[] | null> => {
-
   try {
-    const response = await authenticatedFetch('vehicles', token, {
-      method: 'GET',
-      credentials: 'include', // if backend sets cookies
+    const response = await authenticatedFetch("vehicles", token, {
+      method: "GET",
+      credentials: "include", // if backend sets cookies
     });
 
     if (!response.ok) {
       const errorData = await response.json();
-      console.error('Error getting data:', errorData);
+      console.error("Error getting data:", errorData);
       return null;
     }
 
     return await response.json();
-
   } catch (error) {
-    console.error('Error calling fetch:', error);
+    console.error("Error calling fetch:", error);
     return null;
   }
 };
-
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -77,7 +74,7 @@ export default function HomeScreen() {
           icon={<IconSymbol name="magnifyingglass" color={""} />}
         />
         <DateRangePicker />
-        <Button title="Search" onPress={() => { }} />
+        <Button title="Search" onPress={() => {}} />
       </View>
       <ThemedView style={styles.popularVehiclesContainer}>
         <ThemedText type="subtitle">Popular Vehicles</ThemedText>
