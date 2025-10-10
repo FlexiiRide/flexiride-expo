@@ -26,6 +26,8 @@ import {
   ArrowRight,
 } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
+import { useAuth } from "@/contexts/auth-context";
+import { createVehicle } from "@/lib/vehicleFetch";
 
 type VehicleFormData = {
   title: string;
@@ -56,6 +58,7 @@ const steps = [
 
 export default function AddVehicleScreen() {
   const router = useRouter();
+  const { accessToken } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -178,7 +181,55 @@ export default function AddVehicleScreen() {
     }
   };
 
+  const pickImageWeb = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/png,image/jpeg,image/jpg,image/webp";
+    input.multiple = true;
+
+    input.onchange = (e: Event) => {
+      const target = e.target as HTMLInputElement;
+      const files = target.files;
+
+      if (files) {
+        const newImages: string[] = [];
+        let filesProcessed = 0;
+
+        Array.from(files).forEach((file) => {
+          const reader = new FileReader();
+
+          reader.onload = (event) => {
+            if (event.target?.result) {
+              newImages.push(event.target.result as string);
+            }
+
+            filesProcessed++;
+
+            // Update state when all files are processed
+            if (filesProcessed === files.length) {
+              setFormData((prev) => ({
+                ...prev,
+                images: [...prev.images, ...newImages],
+              }));
+            }
+          };
+
+          reader.readAsDataURL(file);
+        });
+      }
+    };
+
+    input.click();
+  };
+
   const showImagePickerOptions = () => {
+    // For web platform, directly open file picker
+    if (Platform.OS === "web") {
+      pickImageWeb();
+      return;
+    }
+
+    // For mobile platforms, show the alert with camera/gallery options
     Alert.alert(
       "Add Photos",
       "Choose an option",
@@ -245,19 +296,31 @@ export default function AddVehicleScreen() {
       return;
     }
 
+    if (!accessToken) {
+      Alert.alert("Error", "You must be logged in to add a vehicle");
+      router.push("/sign-in");
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      // TODO: Call your API here
-      console.log("Submitting vehicle:", formData);
+      const result = await createVehicle(formData, accessToken);
 
-      Alert.alert("Success", "Vehicle added successfully!", [
-        {
-          text: "OK",
-          onPress: () => router.back(),
-        },
-      ]);
+      if (result.success) {
+        Alert.alert("Success", "Vehicle added successfully!", [
+          {
+            text: "OK",
+            onPress: () => router.back(),
+          },
+        ]);
+      } else {
+        Alert.alert(
+          "Error",
+          result.error || "Failed to add vehicle. Please try again."
+        );
+      }
     } catch (error) {
-      Alert.alert("Error", "Failed to add vehicle. Please try again.");
+      Alert.alert("Error", "An unexpected error occurred. Please try again.");
       console.error(error);
     } finally {
       setIsSubmitting(false);
