@@ -1,10 +1,5 @@
 import React, { useEffect, useState } from "react";
-import {
-  StyleSheet,
-  ScrollView,
-  Image,
-  TouchableOpacity,
-} from "react-native";
+import { StyleSheet, ScrollView, Image, TouchableOpacity } from "react-native";
 
 import { useThemeColor } from "@/hooks/use-theme-color";
 import { ThemedText } from "@/components/themed-text";
@@ -12,21 +7,28 @@ import { ThemedView } from "@/components/themed-view";
 
 import { format } from "date-fns";
 import { Plus } from "lucide-react-native";
-//import { ModalScreen } from '../modal'
 import { Booking, User, Vehicle } from "../../types/index";
 import { useAuth } from "@/contexts/auth-context";
 import { getBookings, getVehicles, getUsers } from "../../lib/api";
+import { useRouter } from "expo-router";
 
 export const DashboardClient: React.FC = () => {
-  const { user } = useAuth();
+  const { user, accessToken } = useAuth();
+  const router = useRouter();
+
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [myVehicles, setMyVehicles] = useState<Vehicle[]>([]);
   const [clients, setClients] = useState<User[]>([]);
   const [owners, setOwners] = useState<User[]>([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const cardBackground = useThemeColor({ light: '#eaecf7', dark: 'rgba(43, 44, 44, 1)' }, 'background');
-  const borderColor = useThemeColor({ light: '#292828ff', dark: '#b9b2b2ff' }, 'background');
-  const backgroundColor = useThemeColor({}, 'background');
+  const cardBackground = useThemeColor(
+    { light: "#eaecf7", dark: "rgba(43, 44, 44, 1)" },
+    "background"
+  );
+  const borderColor = useThemeColor(
+    { light: "#292828ff", dark: "#b9b2b2ff" },
+    "background"
+  );
+  const backgroundColor = useThemeColor({}, "background");
 
   const isOwner = user?.role === "owner";
 
@@ -37,16 +39,21 @@ export const DashboardClient: React.FC = () => {
           const ownerBookings = await getBookings({ ownerId: user.id });
           setBookings(ownerBookings);
 
-          const vehicles = await getVehicles({ ownerId: user.id });
+          const vehicles = await getVehicles({
+            ownerId: user.id,
+            token: accessToken!,
+          });
           setMyVehicles(vehicles);
 
           const clientsData = await getUsers({ role: "client" });
           setClients(clientsData);
         } else {
-          const clientBookings = await getBookings({ clientId: user?.id });
+          const clientBookings = await getBookings({
+            clientId: user?.id,
+          });
           setBookings(clientBookings);
 
-          const vehicles = await getVehicles();
+          const vehicles = await getVehicles({ token: accessToken! });
           setMyVehicles(vehicles);
 
           const ownersData = await getUsers({ role: "owner" });
@@ -62,7 +69,9 @@ export const DashboardClient: React.FC = () => {
 
   if (!user) {
     return (
-      <ThemedView className="flex-1 justify-center items-center">
+      <ThemedView
+        style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+      >
         <ThemedText>Loading user...</ThemedText>
       </ThemedView>
     );
@@ -87,7 +96,9 @@ export const DashboardClient: React.FC = () => {
 
   if (!user) {
     return (
-      <ThemedView className="flex-1 justify-center items-center">
+      <ThemedView
+        style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+      >
         <ThemedText>Loading user...</ThemedText>
       </ThemedView>
     );
@@ -96,14 +107,16 @@ export const DashboardClient: React.FC = () => {
     <ThemedView style={[{ flex: 1, backgroundColor }]}>
       <ScrollView contentContainerStyle={styles.container}>
         {/* Profile Card */}
-        <ThemedView style={[styles.profileCard, { backgroundColor: cardBackground }]}>
+        <ThemedView
+          style={[styles.profileCard, { backgroundColor: cardBackground }]}
+        >
           <Image source={{ uri: user.avatarUrl }} style={styles.avatar} />
           <ThemedView>
             <ThemedText type="title" style={styles.welcomeText}>
               Welcome, {user.name.split(" ")[0]}!
             </ThemedText>
             <ThemedText type="default" style={styles.subtitle}>
-              Here's a quick overview of your Account.
+              Here&apos;s a quick overview of your Account.
             </ThemedText>
           </ThemedView>
         </ThemedView>
@@ -115,7 +128,9 @@ export const DashboardClient: React.FC = () => {
           </ThemedText>
           {bookings.filter((b) => b.status !== "cancelled").length === 0 ? (
             <ThemedView style={styles.noBookings}>
-              <ThemedText style={styles.noBookingsText}>No bookings available.</ThemedText>
+              <ThemedText style={styles.noBookingsText}>
+                No bookings available.
+              </ThemedText>
             </ThemedView>
           ) : (
             bookings
@@ -128,8 +143,13 @@ export const DashboardClient: React.FC = () => {
                 const owner = owners.find((o) => o.id === booking.ownerId);
 
                 return (
-                  <ThemedView key={booking.id} style={[styles.bookingCard, { backgroundColor: cardBackground }]}>
-
+                  <ThemedView
+                    key={booking.id}
+                    style={[
+                      styles.bookingCard,
+                      { backgroundColor: cardBackground },
+                    ]}
+                  >
                     {/* Top Row: Vehicle info + Badge */}
                     <ThemedView style={styles.cardTop}>
                       <Image
@@ -140,7 +160,9 @@ export const DashboardClient: React.FC = () => {
                         <ThemedText style={styles.vehicleTitle}>
                           {vehicle?.title}
                         </ThemedText>
-                        <ThemedText style={styles.vehicleId}>ID: {vehicle?.id}</ThemedText>
+                        <ThemedText style={styles.vehicleId}>
+                          ID: {vehicle?.id}
+                        </ThemedText>
                       </ThemedView>
                       <ThemedView
                         style={[
@@ -174,17 +196,23 @@ export const DashboardClient: React.FC = () => {
                       <ThemedView style={styles.cardBottomColumn}>
                         <ThemedText style={styles.label}>Dates</ThemedText>
                         <ThemedText style={styles.value}>
-                          <ThemedText style={{ fontWeight: "500" }}>From: </ThemedText>
+                          <ThemedText style={{ fontWeight: "500" }}>
+                            From:{" "}
+                          </ThemedText>
                           {format(new Date(booking.from), "PPP p")}
                         </ThemedText>
                         <ThemedText style={styles.value}>
-                          <ThemedText style={{ fontWeight: "500" }}>To: </ThemedText>
+                          <ThemedText style={{ fontWeight: "500" }}>
+                            To:{" "}
+                          </ThemedText>
                           {format(new Date(booking.to), "PPP p")}
                         </ThemedText>
                       </ThemedView>
 
                       <ThemedView style={styles.cardBottomColumn}>
-                        <ThemedText style={styles.label}>Total Price</ThemedText>
+                        <ThemedText style={styles.label}>
+                          Total Price
+                        </ThemedText>
                         <ThemedText style={[styles.value, styles.price]}>
                           LKR {booking.totalPrice.toFixed(2)}
                         </ThemedText>
@@ -203,7 +231,9 @@ export const DashboardClient: React.FC = () => {
                                 handleBookingAction(booking.id, "approved")
                               }
                             >
-                              <ThemedText style={styles.btnText}>Approve</ThemedText>
+                              <ThemedText style={styles.btnText}>
+                                Approve
+                              </ThemedText>
                             </TouchableOpacity>
                             <TouchableOpacity
                               style={[styles.btn, styles.rejectBtn]}
@@ -211,7 +241,9 @@ export const DashboardClient: React.FC = () => {
                                 handleBookingAction(booking.id, "rejected")
                               }
                             >
-                              <ThemedText style={styles.btnText}>Reject</ThemedText>
+                              <ThemedText style={styles.btnText}>
+                                Reject
+                              </ThemedText>
                             </TouchableOpacity>
                           </>
                         )}
@@ -225,7 +257,9 @@ export const DashboardClient: React.FC = () => {
                               handleBookingAction(booking.id, "cancelled")
                             }
                           >
-                            <ThemedText style={styles.btnText}>Cancel</ThemedText>
+                            <ThemedText style={styles.btnText}>
+                              Cancel
+                            </ThemedText>
                           </TouchableOpacity>
                         )}
                     </ThemedView>
@@ -247,7 +281,9 @@ export const DashboardClient: React.FC = () => {
                     style={styles.vehicleCardImage}
                   />
                   <ThemedView style={{ padding: 8 }}>
-                    <ThemedText style={styles.vehicleTitle}>{v.title}</ThemedText>
+                    <ThemedText style={styles.vehicleTitle}>
+                      {v.title}
+                    </ThemedText>
                     <ThemedText style={styles.vehiclePrice}>
                       LKR {v.pricePerDay}/day
                     </ThemedText>
@@ -258,7 +294,7 @@ export const DashboardClient: React.FC = () => {
               {/* Add Vehicle Button */}
               <TouchableOpacity
                 style={[styles.addVehicleCard, { borderColor }]}
-                onPress={() => setIsModalOpen(true)}
+                onPress={() => router.push("/add-vehicle")} // Updated line
               >
                 <Plus size={28} color="#6b7280" />
                 <ThemedText

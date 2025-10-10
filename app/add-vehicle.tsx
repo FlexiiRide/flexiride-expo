@@ -8,6 +8,9 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
+  View,
+  Modal,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useThemeColor } from "@/hooks/use-theme-color";
@@ -26,6 +29,8 @@ import {
   ArrowRight,
 } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
+import { useAuth } from "@/contexts/auth-context";
+import { createVehicle } from "@/lib/vehicleFetch";
 
 type VehicleFormData = {
   title: string;
@@ -56,6 +61,7 @@ const steps = [
 
 export default function AddVehicleScreen() {
   const router = useRouter();
+  const { accessToken } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -178,7 +184,52 @@ export default function AddVehicleScreen() {
     }
   };
 
+  const pickImageWeb = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/png,image/jpeg,image/jpg,image/webp";
+    input.multiple = true;
+
+    input.onchange = (e: Event) => {
+      const target = e.target as HTMLInputElement;
+      const files = target.files;
+
+      if (files) {
+        const newImages: string[] = [];
+        let filesProcessed = 0;
+
+        Array.from(files).forEach((file) => {
+          const reader = new FileReader();
+
+          reader.onload = (event) => {
+            if (event.target?.result) {
+              newImages.push(event.target.result as string);
+            }
+
+            filesProcessed++;
+
+            if (filesProcessed === files.length) {
+              setFormData((prev) => ({
+                ...prev,
+                images: [...prev.images, ...newImages],
+              }));
+            }
+          };
+
+          reader.readAsDataURL(file);
+        });
+      }
+    };
+
+    input.click();
+  };
+
   const showImagePickerOptions = () => {
+    if (Platform.OS === "web") {
+      pickImageWeb();
+      return;
+    }
+
     Alert.alert(
       "Add Photos",
       "Choose an option",
@@ -245,22 +296,47 @@ export default function AddVehicleScreen() {
       return;
     }
 
+    if (!accessToken) {
+      Alert.alert("Error", "You must be logged in to add a vehicle");
+      router.push("/sign-in");
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      // TODO: Call your API here
-      console.log("Submitting vehicle:", formData);
+      const result = await createVehicle(formData, accessToken);
 
-      Alert.alert("Success", "Vehicle added successfully!", [
-        {
-          text: "OK",
-          onPress: () => router.back(),
-        },
-      ]);
+      if (result.success) {
+        // Close the loading modal first
+        setIsSubmitting(false);
+
+        // Then show success alert and navigate
+        Alert.alert(
+          "Success! 🎉",
+          "Your vehicle has been listed successfully",
+          [
+            {
+              text: "OK",
+              onPress: () => {
+                // Navigate after alert is dismissed
+                router.back();
+              },
+            },
+          ],
+          { cancelable: false }
+        );
+        router.back();
+      } else {
+        setIsSubmitting(false);
+        Alert.alert(
+          "Error",
+          result.error || "Failed to add vehicle. Please try again."
+        );
+      }
     } catch (error) {
-      Alert.alert("Error", "Failed to add vehicle. Please try again.");
-      console.error(error);
-    } finally {
       setIsSubmitting(false);
+      Alert.alert("Error", "An unexpected error occurred. Please try again.");
+      console.error(error);
     }
   };
 
@@ -709,11 +785,29 @@ export default function AddVehicleScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={[styles.container, { backgroundColor }]}
     >
+      {/* Loading Spinner Modal */}
+      <Modal
+        visible={isSubmitting}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {}}
+      >
+        <View style={styles.loaderOverlay}>
+          <ThemedView style={styles.loaderContainer}>
+            <ActivityIndicator size="large" color="#3b82f6" />
+            <ThemedText style={styles.loaderText}>
+              Creating your vehicle listing...
+            </ThemedText>
+          </ThemedView>
+        </View>
+      </Modal>
+
       {/* Header */}
       <ThemedView style={[styles.header, { borderBottomColor: borderColor }]}>
         <TouchableOpacity
           onPress={() => router.back()}
           style={styles.backButton}
+          disabled={isSubmitting}
         >
           <ArrowLeft size={24} color={textColor} />
         </TouchableOpacity>
@@ -744,6 +838,7 @@ export default function AddVehicleScreen() {
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        scrollEnabled={!isSubmitting}
       >
         {renderStepContent()}
       </ScrollView>
@@ -755,10 +850,10 @@ export default function AddVehicleScreen() {
             styles.footerButton,
             styles.backFooterButton,
             { borderColor },
-            currentStep === 1 && styles.disabledButton,
+            (currentStep === 1 || isSubmitting) && styles.disabledButton,
           ]}
           onPress={() => setCurrentStep(Math.max(1, currentStep - 1))}
-          disabled={currentStep === 1}
+          disabled={currentStep === 1 || isSubmitting}
         >
           <ThemedText style={styles.backButtonText}>Previous</ThemedText>
         </TouchableOpacity>
@@ -774,20 +869,32 @@ export default function AddVehicleScreen() {
             onPress={handleSubmit}
             disabled={!validateStep(currentStep) || isSubmitting}
           >
-            <ThemedText style={styles.submitButtonText}>
-              {isSubmitting ? "Creating..." : "Create Vehicle"}
-            </ThemedText>
-            {!isSubmitting && <Check size={20} color="#fff" />}
+            {isSubmitting ? (
+              <>
+                <ActivityIndicator size="small" color="#fff" />
+                <ThemedText style={styles.submitButtonText}>
+                  Creating...
+                </ThemedText>
+              </>
+            ) : (
+              <>
+                <ThemedText style={styles.submitButtonText}>
+                  Create Vehicle
+                </ThemedText>
+                <Check size={20} color="#fff" />
+              </>
+            )}
           </TouchableOpacity>
         ) : (
           <TouchableOpacity
             style={[
               styles.footerButton,
               styles.nextButton,
-              !validateStep(currentStep) && styles.disabledButton,
+              (!validateStep(currentStep) || isSubmitting) &&
+                styles.disabledButton,
             ]}
             onPress={handleNext}
-            disabled={!validateStep(currentStep)}
+            disabled={!validateStep(currentStep) || isSubmitting}
           >
             <ThemedText style={styles.nextButtonText}>Next</ThemedText>
             <ArrowRight size={20} color="#fff" />
@@ -801,6 +908,25 @@ export default function AddVehicleScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  loaderOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loaderContainer: {
+    paddingHorizontal: 32,
+    paddingVertical: 40,
+    borderRadius: 16,
+    alignItems: "center",
+    gap: 16,
+    minWidth: 250,
+  },
+  loaderText: {
+    fontSize: 16,
+    fontWeight: "600",
+    textAlign: "center",
   },
   header: {
     flexDirection: "row",
