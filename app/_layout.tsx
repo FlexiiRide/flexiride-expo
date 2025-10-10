@@ -1,6 +1,7 @@
-import { Stack, useRouter, useSegments } from 'expo-router';
-import { AuthProvider, useAuth } from '@/contexts/auth-context';
-import { useEffect, useState } from 'react';
+import { Stack, useRouter, useSegments } from "expo-router";
+import { AuthProvider, useAuth } from "@/contexts/auth-context";
+import { useEffect, useState } from "react";
+import { ThemeProvider } from "../contexts/theme-context";
 
 const InitialLayout = () => {
   const { user } = useAuth();
@@ -11,12 +12,12 @@ const InitialLayout = () => {
   useEffect(() => {
     if (!isLoaded) return;
 
-    const inAuthGroup = segments[0] === '(auth)';
+    const inAuthGroup = segments[0] === "(auth)";
 
     if (!user && !inAuthGroup) {
-      router.replace('/sign-in');
+      router.replace("/sign-in");
     } else if (user && inAuthGroup) {
-      router.replace('/(tabs)');
+      router.replace("/(tabs)");
     }
   }, [user, segments, isLoaded, router]);
 
@@ -28,16 +29,21 @@ const InitialLayout = () => {
     <Stack>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-      <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-      <Stack.Screen name="vehicle/[id]" options={{ title: 'Vehicle Details' }} />
+      <Stack.Screen name="modal" options={{ presentation: "modal" }} />
+      <Stack.Screen
+        name="vehicle/[id]"
+        options={{ title: "Vehicle Details" }}
+      />
     </Stack>
   );
 };
 
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <InitialLayout />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <InitialLayout />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

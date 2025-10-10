@@ -1,5 +1,5 @@
 import { Image, StyleSheet, Platform, View, TextInput } from "react-native";
-
+import { useThemeColor } from "@/hooks/use-theme-color";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import ParallaxScrollView from "@/components/parallax-scroll-view";
@@ -54,10 +54,11 @@ const popularVehicles: Vehicle[] = [
 
 export default function HomeScreen() {
   const router = useRouter();
+  const backgroundColor = useThemeColor({}, "background");
 
   return (
     <ParallaxScrollView
-      headerBackgroundColor={{ light: "#FFFFFF", dark: "#1D3D47" }}
+      headerBackgroundColor={{ light: "#FFFFFF", dark: "#000000ff" }}
       headerImage={
         <Image
           source={{
@@ -67,10 +68,10 @@ export default function HomeScreen() {
         />
       }
     >
-      <ThemedView style={styles.titleContainer}>
+      <ThemedView style={[styles.searchContainer, { backgroundColor }]}>
         <ThemedText type="title">Find Your Perfect Ride, Right Now.</ThemedText>
       </ThemedView>
-      <View style={styles.searchContainer}>
+      <View style={[styles.searchContainer, { backgroundColor }]}>
         <Input
           placeholder="Enter a location"
           icon={<IconSymbol name="magnifyingglass" color={""} />}
