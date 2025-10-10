@@ -1,3 +1,4 @@
+import { useThemeColor } from '@/hooks/use-theme-color';
 import React from 'react';
 import { Pressable, StyleSheet, StyleProp, ViewStyle } from 'react-native';
 
@@ -8,8 +9,10 @@ interface CardProps {
 }
 
 export function Card({ children, style, ...props }: CardProps) {
+  const backgroundColor = useThemeColor({ light: '#fff', dark: '#4e5152ff' }, 'background'); // custom dark color
+
   return (
-    <Pressable style={[styles.card, style]} {...props}>
+    <Pressable style={[styles.card, { backgroundColor }, style]} {...props}>
       {children}
     </Pressable>
   );
@@ -17,7 +20,6 @@ export function Card({ children, style, ...props }: CardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: 'white',
     borderRadius: 12,
     padding: 16,
     shadowColor: '#000',
