@@ -5,52 +5,66 @@ import { Button } from "@/components/ui/button";
 import { DateRangePicker } from "@/components/date-range-picker";
 import { useLocalSearchParams } from "expo-router";
 import { Card } from "@/components/ui/card";
+import { authenticatedFetch } from "@/lib/authFetch";
+import { useAuth } from "@/contexts/auth-context";
+import { Vehicle } from "@/types";
+import React, { useEffect, useState } from "react";
 
 // This is a mock data source. In a real app, you would fetch this data from an API.
-const getVehicleDetails = (id: string) => {
-  return {
-    id: id,
-    ownerId: "1",
-    title: "Toyota Prius 2019",
-    type: "car",
-    pricePerHour: 6.5,
-    pricePerDay: 50,
-    images: [
-      "https://tse3.mm.bing.net/th/id/OIP.20PjfVQuasP1aj1VyEqhrwHaFj?rs=1&pid=ImgDetMain&o=7&rm=3",
-    ],
-    location: {
-      address: "Colombo 7, Sri Lanka",
-      lat: 6.902,
-      lng: 79.865,
-    },
-    availableRanges: [],
-    description:
-      "A very good car, with all the modern features. It is well-maintained and regularly serviced.",
-    status: "active",
-  };
+const getVehicleDetails = async (id: string, token: string): Promise<Vehicle | null> => {
+
+  try {
+    const response = await authenticatedFetch(`vehicles/${id}`, token, {
+      method: 'GET',
+      credentials: 'include', // if backend sets cookies
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('Error getting data:', errorData);
+      return null;
+    }
+
+    return await response.json();
+
+  } catch (error) {
+    console.error('Error calling fetch:', error);
+    return null;
+  }
 };
 
 export default function VehicleDetailsScreen() {
   const { id } = useLocalSearchParams();
-  const vehicle = getVehicleDetails(id as string);
+  const { refreshToken } = useAuth();
+
+  const [vehicle, setVehicle] = useState<Vehicle | null>(null);
+
+  useEffect(() => {
+    if (!id || !refreshToken) return;
+
+    getVehicleDetails(id as string, refreshToken).then(result => setVehicle(result));
+  }, [id, refreshToken]);
+
+  if (!vehicle) return null; // or a loader
 
   return (
     <ThemedView style={styles.container}>
-      <Image source={{ uri: vehicle.images[0] }} style={styles.vehicleImage} />
+      {vehicle.images?.[0] && (
+        <Image source={{ uri: vehicle.images[0] }} style={styles.vehicleImage} />
+      )}
       <View style={styles.detailsContainer}>
         <ThemedText type="title">{vehicle.title}</ThemedText>
         <ThemedText style={styles.price}>${vehicle.pricePerDay}/day</ThemedText>
-        <ThemedText style={styles.description}>
-          {vehicle.description}
-        </ThemedText>
+        <ThemedText style={styles.description}>{vehicle.description}</ThemedText>
       </View>
       <Card style={styles.bookingCard}>
         <DateRangePicker />
-        <Button title="Request to Book" onPress={() => {}} />
+        <Button title="Request to Book" onPress={() => { }} />
       </Card>
     </ThemedView>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {

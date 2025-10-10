@@ -1,5 +1,5 @@
-import { Image, StyleSheet, View } from "react-native";
-
+import { Image, StyleSheet, Platform, View, TextInput } from "react-native";
+import { useThemeColor } from "@/hooks/use-theme-color";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import ParallaxScrollView from "@/components/parallax-scroll-view";
@@ -10,55 +10,52 @@ import { Input } from "@/components/ui/input";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { DateRangePicker } from "@/components/date-range-picker";
 import { useRouter } from "expo-router";
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { useAuth } from "@/contexts/auth-context";
+import { authenticatedFetch } from "@/lib/authFetch";
 
-const popularVehicles: Vehicle[] = [
-  {
-    id: "1",
-    ownerId: "1",
-    title: "Toyota Prius 2019",
-    type: "car",
-    pricePerHour: 6.5,
-    pricePerDay: 50,
-    images: [
-      "https://tse3.mm.bing.net/th/id/OIP.20PjfVQuasP1aj1VyEqhrwHaFj?rs=1&pid=ImgDetMain&o=7&rm=3",
-    ],
-    location: {
-      address: "Colombo 7, Sri Lanka",
-      lat: 6.902,
-      lng: 79.865,
-    },
-    availableRanges: [],
-    description: "A very good car",
-    status: "active",
-  },
-  {
-    id: "2",
-    ownerId: "2",
-    title: "Honda Activa 2020",
-    type: "bike",
-    pricePerHour: 2.5,
-    pricePerDay: 20,
-    images: [
-      "https://images.carandbike.com/cms/articles/2024/2/3211549/Honda_Activa_9f47b6cd52.jpg",
-    ],
-    location: {
-      address: "Colombo 5, Sri Lanka",
-      lat: 6.884,
-      lng: 79.863,
-    },
-    availableRanges: [],
-    description: "A very good bike",
-    status: "active",
-  },
-];
+const getPopularVehicles = async (token: string): Promise<Vehicle[] | null> => {
+  try {
+    const response = await authenticatedFetch("vehicles", token, {
+      method: "GET",
+      credentials: "include", // if backend sets cookies
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("Error getting data:", errorData);
+      return null;
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Error calling fetch:", error);
+    return null;
+  }
+};
 
 export default function HomeScreen() {
   const router = useRouter();
+  const backgroundColor = useThemeColor({}, "background");
+
+  const { accessToken } = useAuth();
+  const [loadingVehicle, setLoadingVehicle] = useState(false)
+  const [popularVehicles, setPopularVehicles] = useState<Vehicle[]>([]);
+
+  useEffect(() => {
+    if (!accessToken) return;
+
+    setLoadingVehicle(true)
+    getPopularVehicles(accessToken).then(result => {
+      setPopularVehicles(result || []);
+    });
+    setLoadingVehicle(false)
+  }
+    , [accessToken]);
 
   return (
     <ParallaxScrollView
-      headerBackgroundColor={{ light: "#FFFFFF", dark: "#1D3D47" }}
+      headerBackgroundColor={{ light: "#FFFFFF", dark: "#000000ff" }}
       headerImage={
         <Image
           source={{
@@ -68,20 +65,20 @@ export default function HomeScreen() {
         />
       }
     >
-      <ThemedView style={styles.titleContainer}>
+      <ThemedView style={[styles.searchContainer, { backgroundColor }]}>
         <ThemedText type="title">Find Your Perfect Ride, Right Now.</ThemedText>
       </ThemedView>
-      <View style={styles.searchContainer}>
+      <View style={[styles.searchContainer, { backgroundColor }]}>
         <Input
           placeholder="Enter a location"
           icon={<IconSymbol name="magnifyingglass" color={""} />}
         />
         <DateRangePicker />
-        <Button title="Search" onPress={() => { }} />
+        <Button title="Search" onPress={() => {}} />
       </View>
       <ThemedView style={styles.popularVehiclesContainer}>
         <ThemedText type="subtitle">Popular Vehicles</ThemedText>
-        {popularVehicles.map((vehicle) => (
+        {loadingVehicle ? <ThemedText>Loading</ThemedText> : popularVehicles && popularVehicles.map((vehicle) => (
           <Card
             key={vehicle.id}
             onPress={() => router.push(`/vehicle/${vehicle.id}`)}
