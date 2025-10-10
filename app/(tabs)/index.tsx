@@ -37,17 +37,21 @@ const getPopularVehicles = async (token: string): Promise<Vehicle[] | null> => {
 export default function HomeScreen() {
   const router = useRouter();
   const backgroundColor = useThemeColor({}, "background");
-  const { token } = useAuth();
 
+  const { accessToken } = useAuth();
+  const [loadingVehicle, setLoadingVehicle] = useState(false)
   const [popularVehicles, setPopularVehicles] = useState<Vehicle[]>([]);
 
   useEffect(() => {
-    if (!token) return;
+    if (!accessToken) return;
 
-    getPopularVehicles(token).then((result) => {
+    setLoadingVehicle(true)
+    getPopularVehicles(accessToken).then(result => {
       setPopularVehicles(result || []);
     });
-  }, [token]);
+    setLoadingVehicle(false)
+  }
+    , [accessToken]);
 
   return (
     <ParallaxScrollView
@@ -74,23 +78,22 @@ export default function HomeScreen() {
       </View>
       <ThemedView style={styles.popularVehiclesContainer}>
         <ThemedText type="subtitle">Popular Vehicles</ThemedText>
-        {popularVehicles &&
-          popularVehicles.map((vehicle) => (
-            <Card
-              key={vehicle.id}
-              onPress={() => router.push(`/vehicle/${vehicle.id}`)}
-              style={styles.vehicleCard}
-            >
-              <Image
-                source={{ uri: vehicle.images[0] }}
-                style={styles.vehicleImage}
-              />
-              <View style={styles.vehicleDetails}>
-                <ThemedText type="defaultSemiBold">{vehicle.title}</ThemedText>
-                <ThemedText>${vehicle.pricePerDay}/day</ThemedText>
-              </View>
-            </Card>
-          ))}
+        {loadingVehicle ? <ThemedText>Loading</ThemedText> : popularVehicles && popularVehicles.map((vehicle) => (
+          <Card
+            key={vehicle.id}
+            onPress={() => router.push(`/vehicle/${vehicle.id}`)}
+            style={styles.vehicleCard}
+          >
+            <Image
+              source={{ uri: vehicle.images[0] }}
+              style={styles.vehicleImage}
+            />
+            <View style={styles.vehicleDetails}>
+              <ThemedText type="defaultSemiBold">{vehicle.title}</ThemedText>
+              <ThemedText>${vehicle.pricePerDay}/day</ThemedText>
+            </View>
+          </Card>
+        ))}
       </ThemedView>
     </ParallaxScrollView>
   );

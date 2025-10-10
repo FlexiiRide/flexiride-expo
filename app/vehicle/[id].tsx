@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card";
 import { authenticatedFetch } from "@/lib/authFetch";
 import { useAuth } from "@/contexts/auth-context";
 import { Vehicle } from "@/types";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 
 // This is a mock data source. In a real app, you would fetch this data from an API.
 const getVehicleDetails = async (id: string, token: string): Promise<Vehicle | null> => {
@@ -35,15 +35,15 @@ const getVehicleDetails = async (id: string, token: string): Promise<Vehicle | n
 
 export default function VehicleDetailsScreen() {
   const { id } = useLocalSearchParams();
-  const { token } = useAuth();
+  const { refreshToken } = useAuth();
 
   const [vehicle, setVehicle] = useState<Vehicle | null>(null);
 
   useEffect(() => {
-    if (!id || !token) return;
+    if (!id || !refreshToken) return;
 
-    getVehicleDetails(id as string, token).then(result => setVehicle(result));
-  }, [id, token]);
+    getVehicleDetails(id as string, refreshToken).then(result => setVehicle(result));
+  }, [id, refreshToken]);
 
   if (!vehicle) return null; // or a loader
 

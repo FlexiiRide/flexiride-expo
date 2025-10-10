@@ -6,7 +6,8 @@ const API_BASE_URL = Constants.expoConfig?.extra?.API_BASE_URL
 
 interface AuthContextType {
   user: User | null;
-  token: string | null;
+  accessToken: string | null;
+  refreshToken: string | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<boolean>;
   signOut: () => void;
@@ -18,7 +19,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [refreshToken, setRefreshToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const signIn = useCallback(async (email: string, password: string) => {
@@ -36,9 +38,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return false;
       }
 
-      const { token: receiveToken, user: receiveUser } = await res.json();
+      const { accessToken: receiveAccessToken, refreshToken: receiveRefreshToken, user: receiveUser } = await res.json();
       setUser(receiveUser);
-      setToken(receiveToken);
+      setAccessToken(receiveAccessToken);
+      setRefreshToken(receiveRefreshToken);
       return true;
     } catch (error) {
       console.error('Login exception:', error);
@@ -50,7 +53,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signOut = () => {
     setUser(null);
-    setToken(null);
+    setAccessToken(null);
+    setRefreshToken(null);
   };
 
   const signUp = useCallback(async (newUser: Omit<User, 'id'>) => {
@@ -72,9 +76,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return false;
       }
 
-      const { token: receiveToken, user: newUserWithId } = await res.json();
+      const { accessToken: receiveAccessToken, refreshToken: receiveRefreshToken, user: newUserWithId } = await res.json();
       setUser(newUserWithId);
-      setToken(receiveToken);
+      setAccessToken(receiveAccessToken);
+      setRefreshToken(receiveRefreshToken);
       return true;
     } catch (error) {
       console.error('Signup exception:', error);
@@ -85,7 +90,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, signIn, signOut, signUp }}>
+    <AuthContext.Provider value={{ user, accessToken, refreshToken, loading, signIn, signOut, signUp }}>
       {children}
     </AuthContext.Provider>
   );

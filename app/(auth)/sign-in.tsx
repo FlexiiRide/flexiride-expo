@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { View, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform } from "react-native";
 import { ThemedView } from "@/components/themed-view";
 import { ThemedText } from "@/components/themed-text";
 import { Input } from "@/components/ui/input";
@@ -9,13 +10,6 @@ import { useNavigation } from "@react-navigation/native";
 import { useLayoutEffect } from "react";
 import { ThemeToggleButton } from "@/components/ui/theme-toggle-button";
 import { useThemeColor } from "@/hooks/use-theme-color";
-import {
-  View,
-  StyleSheet,
-  TouchableOpacity,
-  KeyboardAvoidingView,
-  Platform,
-} from "react-native";
 
 export default function SignInScreen() {
   const router = useRouter();
@@ -26,10 +20,6 @@ export default function SignInScreen() {
   const navigation = useNavigation();
   const backgroundColor = useThemeColor({}, "background");
   const textColor = useThemeColor({}, "text"); // theme-aware text color
-
-  const handleSignIn = () => {
-    signIn(email, password);
-  };
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -46,12 +36,12 @@ export default function SignInScreen() {
     });
   }, [navigation, backgroundColor, textColor]);
 
+  const handleSignIn = () => {
+    signIn(email, password);
+  };
+
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={64}
-    >
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={64}>
       <ThemedView style={[styles.container, { backgroundColor }]}>
         <ThemedText type="title" style={styles.title}>
           Welcome Back

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { View, StyleSheet, TouchableOpacity, Alert, KeyboardAvoidingView, Platform } from "react-native";
 import { ThemedView } from "@/components/themed-view";
 import { ThemedText } from "@/components/themed-text";
 import { Input } from "@/components/ui/input";
@@ -9,14 +10,6 @@ import { useNavigation } from "@react-navigation/native";
 import { useLayoutEffect } from "react";
 import { ThemeToggleButton } from "@/components/ui/theme-toggle-button";
 import { useThemeColor } from "@/hooks/use-theme-color";
-import {
-  View,
-  StyleSheet,
-  TouchableOpacity,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-} from "react-native";
 
 export default function SignUpScreen() {
   const router = useRouter();
@@ -54,18 +47,14 @@ export default function SignUpScreen() {
       name,
       email,
       password, // Using password as passwordHash for mock auth
-      role: "client",
-      phone: "+94123456789", // Dummy phone number
-      avatarUrl: `https://i.pravatar.cc/150?u=${email}`,
+      role: 'client',
+      phone: '+94123456789', // Dummy phone number
+      avatarUrl: `https://i.pravatar.cc/150?u=${email}`
     });
   };
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={64}
-    >
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={64}>
       <ThemedView style={[styles.container, { backgroundColor }]}>
         <ThemedText type="title" style={styles.title}>
           Create Account
