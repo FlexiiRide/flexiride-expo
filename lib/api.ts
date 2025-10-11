@@ -1,5 +1,8 @@
 import { type User, type Vehicle, type Booking } from "../types/index";
 import { getMyVehicles } from "./vehicleFetch";
+import Constants from 'expo-constants';
+
+const API_BASE_URL = Constants.expoConfig?.extra?.API_BASE_URL || "http://localhost:4000/";
 
 const mockUsers: User[] = [
   {
@@ -347,7 +350,7 @@ export async function getBookingById(id: string): Promise<Booking | undefined> {
 // --- User Profile Functions ---
 export async function getUserProfile(userId: string, token: string): Promise<User> {
   try {
-    const response = await fetch(`http://localhost:3000/users/${userId}`, {
+    const response = await fetch(`${API_BASE_URL}users/${userId}`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
@@ -385,7 +388,7 @@ export async function updateUserProfile(
     if (userData.phone) formData.append('phone', userData.phone);
     if (avatarFile) formData.append('avatar', avatarFile);
 
-    const response = await fetch(`http://localhost:3000/users/${userId}`, {
+    const response = await fetch(`${API_BASE_URL}users/${userId}`, {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${token}`,
