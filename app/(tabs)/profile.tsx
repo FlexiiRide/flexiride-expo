@@ -18,19 +18,18 @@ import { User } from "../../types/index";
 import { useAuth } from "@/contexts/auth-context";
 import { getUserProfile, updateUserProfile } from "../../lib/api";
 import { showSuccessToast, showErrorToast } from "../../lib/toast";
-import { Edit3, Camera, User as UserIcon, Mail, Phone, FileText } from "lucide-react-native";
+import { Edit3, Camera, User as UserIcon, Mail, FileText } from "lucide-react-native";
 
 export default function ProfileScreen() {
-  const { user, token } = useAuth();
+  const { user, accessToken } = useAuth();
   const [profileData, setProfileData] = useState<User | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   
-  // Form state
+  // Form state (removed phone field)
   const [formData, setFormData] = useState({
     name: "",
-    phone: "",
     bio: "",
   });
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -54,15 +53,14 @@ export default function ProfileScreen() {
   }, []);
 
   const loadUserProfile = async () => {
-    if (!user?.id || !token) return;
+    if (!user?.id || !accessToken) return;
     
     try {
       setLoading(true);
-      const profile = await getUserProfile(user.id, token);
+      const profile = await getUserProfile(user.id, accessToken);
       setProfileData(profile);
       setFormData({
         name: profile.name || "",
-        phone: profile.phone || "",
         bio: profile.bio || "",
       });
     } catch (error) {
@@ -96,7 +94,6 @@ export default function ProfileScreen() {
             if (profileData) {
               setFormData({
                 name: profileData.name || "",
-                phone: profileData.phone || "",
                 bio: profileData.bio || "",
               });
             }
@@ -137,14 +134,14 @@ export default function ProfileScreen() {
   };
 
   const handleUpdateProfile = async () => {
-    if (!user?.id || !token) return;
+    if (!user?.id || !accessToken) return;
 
     try {
       setUpdating(true);
       
       const updatedProfile = await updateUserProfile(
         user.id,
-        token,
+        accessToken,
         formData,
         imageFile
       );
@@ -238,15 +235,6 @@ export default function ProfileScreen() {
                 />
                 
                 <Input
-                  label="Phone Number"
-                  value={formData.phone}
-                  onChangeText={(text) => setFormData(prev => ({ ...prev, phone: text }))}
-                  placeholder="Enter your phone number"
-                  keyboardType="phone-pad"
-                  icon={<Phone size={20} color={iconColor} />}
-                />
-                
-                <Input
                   label="Bio"
                   value={formData.bio}
                   onChangeText={(text) => setFormData(prev => ({ ...prev, bio: text }))}
@@ -276,18 +264,6 @@ export default function ProfileScreen() {
                     </ThemedText>
                   </View>
                   <ThemedText style={styles.fieldValue}>{profileData.email}</ThemedText>
-                </View>
-
-                <View style={styles.fieldContainer}>
-                  <View style={styles.fieldHeader}>
-                    <Phone size={20} color={iconColor} />
-                    <ThemedText style={[styles.fieldLabel, { color: iconColor }]}>
-                      Phone Number
-                    </ThemedText>
-                  </View>
-                  <ThemedText style={styles.fieldValue}>
-                    {profileData.phone || "No phone number added"}
-                  </ThemedText>
                 </View>
 
                 <View style={styles.fieldContainer}>

@@ -1,5 +1,8 @@
 import { type User, type Vehicle, type Booking } from "../types/index";
 import { getMyVehicles } from "./vehicleFetch";
+import Constants from 'expo-constants';
+
+const API_BASE_URL = Constants.expoConfig?.extra?.API_BASE_URL || "http://localhost:4000/";
 
 const mockUsers: User[] = [
   {
@@ -10,6 +13,7 @@ const mockUsers: User[] = [
     role: "owner",
     avatarUrl: "https://picsum.photos/seed/u1/100/100",
     password: "password123",
+    bio: "Experienced vehicle owner providing quality rental services."
   },
   // {
   //   id: 'u_2',
@@ -28,6 +32,7 @@ const mockUsers: User[] = [
     role: "owner",
     avatarUrl: "https://picsum.photos/seed/u3/100/100",
     password: "password123",
+    bio: "Passionate about providing reliable transportation solutions."
   },
   {
     id: "u_4",
@@ -37,6 +42,7 @@ const mockUsers: User[] = [
     role: "client",
     avatarUrl: "https://picsum.photos/seed/u4/100/100",
     password: "password123",
+    bio: "Frequent traveler looking for convenient vehicle rentals."
   },
 ];
 
@@ -339,6 +345,82 @@ export async function getBookingById(id: string): Promise<Booking | undefined> {
   await delay(100);
   const bookings = mockBookings as Booking[];
   return bookings.find((booking) => booking.id === id);
+}
+
+// --- User Profile Functions ---
+export async function getUserProfile(userId: string, token: string): Promise<User> {
+  try {
+    const response = await fetch(`${API_BASE_URL}users/${userId}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch user profile: ${response.statusText}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching user profile, using fallback:', error);
+    // Fallback to mock data if API is not available
+    await delay(500);
+    const mockUser = mockUsers.find(u => u.id === userId);
+    if (mockUser) {
+      return mockUser;
+    }
+    throw new Error('User not found');
+  }
+}
+
+export async function updateUserProfile(
+  userId: string, 
+  token: string, 
+  userData: { name?: string; bio?: string; phone?: string }, 
+  avatarFile?: any
+): Promise<User> {
+  try {
+    const formData = new FormData();
+    
+    if (userData.name) formData.append('name', userData.name);
+    if (userData.bio) formData.append('bio', userData.bio);
+    if (userData.phone) formData.append('phone', userData.phone);
+    if (avatarFile) formData.append('avatar', avatarFile);
+
+    const response = await fetch(`${API_BASE_URL}users/${userId}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'multipart/form-data'
+      },
+      body: formData
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to update user profile: ${response.statusText}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error updating user profile, using fallback:', error);
+    // Fallback to mock update if API is not available
+    await delay(1000);
+    
+    const userIndex = mockUsers.findIndex(u => u.id === userId);
+    if (userIndex !== -1) {
+      const updatedUser = {
+        ...mockUsers[userIndex],
+        ...userData,
+        // If there's an avatar file, simulate updating the avatar URL
+        ...(avatarFile && { avatarUrl: `https://picsum.photos/seed/${userId}-updated/100/100` })
+      };
+      mockUsers[userIndex] = updatedUser;
+      return updatedUser;
+    }
+    
+    throw new Error('User not found');
+  }
 }
 // 'use server';
 
