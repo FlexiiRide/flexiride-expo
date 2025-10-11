@@ -1,423 +1,457 @@
 import React, { useEffect, useState } from "react";
-import { StyleSheet, ScrollView, Image, TouchableOpacity } from "react-native";
-
+import {
+  StyleSheet,
+  ScrollView,
+  Image,
+  TouchableOpacity,
+  View,
+  ActivityIndicator,
+  Alert,
+} from "react-native";
+import * as ImagePicker from "expo-image-picker";
 import { useThemeColor } from "@/hooks/use-theme-color";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-
-import { format } from "date-fns";
-import { Plus } from "lucide-react-native";
-import { Booking, User, Vehicle } from "../../types/index";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { User } from "../../types/index";
 import { useAuth } from "@/contexts/auth-context";
-import { getBookings, getVehicles, getUsers } from "../../lib/api";
-import { useRouter } from "expo-router";
+import { getUserProfile, updateUserProfile } from "../../lib/api";
+import { showSuccessToast, showErrorToast } from "../../lib/toast";
+import { Edit3, Camera, User as UserIcon, Mail, Phone, FileText } from "lucide-react-native";
 
-export const DashboardClient: React.FC = () => {
-  const { user, accessToken } = useAuth();
-  const router = useRouter();
+export default function ProfileScreen() {
+  const { user, token } = useAuth();
+  const [profileData, setProfileData] = useState<User | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(false);
+  
+  // Form state
+  const [formData, setFormData] = useState({
+    name: "",
+    phone: "",
+    bio: "",
+  });
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<any>(null);
 
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [myVehicles, setMyVehicles] = useState<Vehicle[]>([]);
-  const [clients, setClients] = useState<User[]>([]);
-  const [owners, setOwners] = useState<User[]>([]);
+  // Theme colors
+  const backgroundColor = useThemeColor({}, "background");
   const cardBackground = useThemeColor(
-    { light: "#eaecf7", dark: "rgba(43, 44, 44, 1)" },
+    { light: "#ffffff", dark: "rgba(43, 44, 44, 1)" },
     "background"
   );
   const borderColor = useThemeColor(
-    { light: "#292828ff", dark: "#b9b2b2ff" },
-    "background"
+    { light: "#e0e0e0", dark: "#404040" },
+    "text"
   );
-  const backgroundColor = useThemeColor({}, "background");
-
-  const isOwner = user?.role === "owner";
+  const textColor = useThemeColor({}, "text");
+  const iconColor = useThemeColor({ light: "#666", dark: "#ccc" }, "text");
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        if (isOwner) {
-          const ownerBookings = await getBookings({ ownerId: user.id });
-          setBookings(ownerBookings);
+    loadUserProfile();
+  }, []);
 
-          const vehicles = await getVehicles({
-            ownerId: user.id,
-            token: accessToken!,
-          });
-          setMyVehicles(vehicles);
+  const loadUserProfile = async () => {
+    if (!user?.id || !token) return;
+    
+    try {
+      setLoading(true);
+      const profile = await getUserProfile(user.id, token);
+      setProfileData(profile);
+      setFormData({
+        name: profile.name || "",
+        phone: profile.phone || "",
+        bio: profile.bio || "",
+      });
+    } catch (error) {
+      showErrorToast("Error", "Failed to load profile data");
+      console.error("Error loading profile:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-          const clientsData = await getUsers({ role: "client" });
-          setClients(clientsData);
-        } else {
-          const clientBookings = await getBookings({
-            clientId: user?.id,
-          });
-          setBookings(clientBookings);
+  const handleEditPress = () => {
+    setIsEditing(true);
+    setSelectedImage(null);
+    setImageFile(null);
+  };
 
-          const vehicles = await getVehicles({ token: accessToken! });
-          setMyVehicles(vehicles);
+  const handleDiscardPress = () => {
+    Alert.alert(
+      "Discard Changes",
+      "Are you sure you want to discard all changes?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Discard",
+          style: "destructive",
+          onPress: () => {
+            setIsEditing(false);
+            setSelectedImage(null);
+            setImageFile(null);
+            // Reset form data to original values
+            if (profileData) {
+              setFormData({
+                name: profileData.name || "",
+                phone: profileData.phone || "",
+                bio: profileData.bio || "",
+              });
+            }
+          },
+        },
+      ]
+    );
+  };
 
-          const ownersData = await getUsers({ role: "owner" });
-          setOwners(ownersData);
-        }
-      } catch (error) {
-        console.error("Failed to fetch data:", error);
-      }
-    };
+  const pickImage = async () => {
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    
+    if (permissionResult.granted === false) {
+      Alert.alert("Permission Required", "Permission to access camera roll is required!");
+      return;
+    }
 
-    fetchData();
-  }, [user, isOwner]);
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
 
-  if (!user) {
+    if (!result.canceled && result.assets[0]) {
+      const asset = result.assets[0];
+      setSelectedImage(asset.uri);
+      
+      // Create file object for upload
+      const fileExtension = asset.uri.split('.').pop();
+      const fileName = `avatar_${Date.now()}.${fileExtension}`;
+      setImageFile({
+        uri: asset.uri,
+        type: `image/${fileExtension}`,
+        name: fileName,
+      });
+    }
+  };
+
+  const handleUpdateProfile = async () => {
+    if (!user?.id || !token) return;
+
+    try {
+      setUpdating(true);
+      
+      const updatedProfile = await updateUserProfile(
+        user.id,
+        token,
+        formData,
+        imageFile
+      );
+      
+      setProfileData(updatedProfile);
+      setIsEditing(false);
+      setSelectedImage(null);
+      setImageFile(null);
+      showSuccessToast("Success", "Profile updated successfully!");
+      
+    } catch (error) {
+      showErrorToast("Error", "Failed to update profile");
+      console.error("Error updating profile:", error);
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  if (loading) {
     return (
-      <ThemedView
-        style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
-      >
-        <ThemedText>Loading user...</ThemedText>
+      <ThemedView style={[styles.container, { backgroundColor }]}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#007AFF" />
+          <ThemedText style={styles.loadingText}>Loading profile...</ThemedText>
+        </View>
       </ThemedView>
     );
   }
 
-  const handleBookingAction = (bookingId: string, newStatus: string) => {
-    console.log(`Booking ${bookingId} -> ${newStatus}`);
-    // TODO: call API and update state
-  };
-
-  const handleVehicleSubmit = (vehicleData: any) => {
-    console.log("Submitting vehicle:", vehicleData);
-    // TODO: call API
-  };
-
-  const statusColors: Record<string, any> = {
-    approved: { bg: "#d1fae5", text: "#065f46" },
-    rejected: { bg: "#fee2e2", text: "#991b1b" },
-    requested: { bg: "#fef3c7", text: "#92400e" },
-    cancelled: { bg: "#e5e7eb", text: "#374151" },
-  };
-
-  if (!user) {
+  if (!profileData) {
     return (
-      <ThemedView
-        style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
-      >
-        <ThemedText>Loading user...</ThemedText>
+      <ThemedView style={[styles.container, { backgroundColor }]}>
+        <View style={styles.errorContainer}>
+          <ThemedText style={styles.errorText}>Failed to load profile data</ThemedText>
+          <Button title="Retry" onPress={loadUserProfile} />
+        </View>
       </ThemedView>
     );
   }
+
+  const displayImage = selectedImage || profileData.avatarUrl;
+
   return (
-    <ThemedView style={[{ flex: 1, backgroundColor }]}>
-      <ScrollView contentContainerStyle={styles.container}>
-        {/* Profile Card */}
-        <ThemedView
-          style={[styles.profileCard, { backgroundColor: cardBackground }]}
-        >
-          <Image source={{ uri: user.avatarUrl }} style={styles.avatar} />
-          <ThemedView>
-            <ThemedText type="title" style={styles.welcomeText}>
-              Welcome, {user.name.split(" ")[0]}!
-            </ThemedText>
-            <ThemedText type="default" style={styles.subtitle}>
-              Here&apos;s a quick overview of your Account.
-            </ThemedText>
-          </ThemedView>
-        </ThemedView>
-
-        {/* Bookings Section */}
-        <ThemedView style={styles.section}>
-          <ThemedText style={styles.sectionTitle}>
-            {isOwner ? "Booking Requests" : "Your Bookings"}
-          </ThemedText>
-          {bookings.filter((b) => b.status !== "cancelled").length === 0 ? (
-            <ThemedView style={styles.noBookings}>
-              <ThemedText style={styles.noBookingsText}>
-                No bookings available.
-              </ThemedText>
-            </ThemedView>
-          ) : (
-            bookings
-              .filter((b) => b.status !== "cancelled")
-              .map((booking) => {
-                const vehicle = myVehicles.find(
-                  (v) => v.id === booking.vehicleId
-                );
-                const client = clients.find((c) => c.id === booking.clientId);
-                const owner = owners.find((o) => o.id === booking.ownerId);
-
-                return (
-                  <ThemedView
-                    key={booking.id}
-                    style={[
-                      styles.bookingCard,
-                      { backgroundColor: cardBackground },
-                    ]}
-                  >
-                    {/* Top Row: Vehicle info + Badge */}
-                    <ThemedView style={styles.cardTop}>
-                      <Image
-                        source={{ uri: vehicle?.images[0] }}
-                        style={styles.vehicleImage}
-                      />
-                      <ThemedView style={{ flex: 1 }}>
-                        <ThemedText style={styles.vehicleTitle}>
-                          {vehicle?.title}
-                        </ThemedText>
-                        <ThemedText style={styles.vehicleId}>
-                          ID: {vehicle?.id}
-                        </ThemedText>
-                      </ThemedView>
-                      <ThemedView
-                        style={[
-                          styles.statusBadge,
-                          { backgroundColor: statusColors[booking.status]?.bg },
-                        ]}
-                      >
-                        <ThemedText
-                          style={{
-                            color: statusColors[booking.status]?.text,
-                            fontWeight: "500",
-                          }}
-                        >
-                          {booking.status.charAt(0).toUpperCase() +
-                            booking.status.slice(1)}
-                        </ThemedText>
-                      </ThemedView>
-                    </ThemedView>
-
-                    {/* Bottom Row: Renter/Owner, Dates, Price */}
-                    <ThemedView style={styles.cardBottom}>
-                      <ThemedView style={styles.cardBottomColumn}>
-                        <ThemedText style={styles.label}>
-                          {isOwner ? "Renter" : "Owner"}
-                        </ThemedText>
-                        <ThemedText style={styles.value}>
-                          {isOwner ? client?.name : owner?.name || "Unknown"}
-                        </ThemedText>
-                      </ThemedView>
-
-                      <ThemedView style={styles.cardBottomColumn}>
-                        <ThemedText style={styles.label}>Dates</ThemedText>
-                        <ThemedText style={styles.value}>
-                          <ThemedText style={{ fontWeight: "500" }}>
-                            From:{" "}
-                          </ThemedText>
-                          {format(new Date(booking.from), "PPP p")}
-                        </ThemedText>
-                        <ThemedText style={styles.value}>
-                          <ThemedText style={{ fontWeight: "500" }}>
-                            To:{" "}
-                          </ThemedText>
-                          {format(new Date(booking.to), "PPP p")}
-                        </ThemedText>
-                      </ThemedView>
-
-                      <ThemedView style={styles.cardBottomColumn}>
-                        <ThemedText style={styles.label}>
-                          Total Price
-                        </ThemedText>
-                        <ThemedText style={[styles.value, styles.price]}>
-                          LKR {booking.totalPrice.toFixed(2)}
-                        </ThemedText>
-                      </ThemedView>
-                    </ThemedView>
-
-                    {/* Actions */}
-                    <ThemedView style={styles.actions}>
-                      {isOwner &&
-                        booking.status === "requested" &&
-                        new Date(booking.from) > new Date() && (
-                          <>
-                            <TouchableOpacity
-                              style={[styles.btn, styles.approveBtn]}
-                              onPress={() =>
-                                handleBookingAction(booking.id, "approved")
-                              }
-                            >
-                              <ThemedText style={styles.btnText}>
-                                Approve
-                              </ThemedText>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                              style={[styles.btn, styles.rejectBtn]}
-                              onPress={() =>
-                                handleBookingAction(booking.id, "rejected")
-                              }
-                            >
-                              <ThemedText style={styles.btnText}>
-                                Reject
-                              </ThemedText>
-                            </TouchableOpacity>
-                          </>
-                        )}
-
-                      {!isOwner &&
-                        ["approved", "requested"].includes(booking.status) &&
-                        new Date(booking.from) > new Date() && (
-                          <TouchableOpacity
-                            style={[styles.btn, styles.cancelBtn]}
-                            onPress={() =>
-                              handleBookingAction(booking.id, "cancelled")
-                            }
-                          >
-                            <ThemedText style={styles.btnText}>
-                              Cancel
-                            </ThemedText>
-                          </TouchableOpacity>
-                        )}
-                    </ThemedView>
-                  </ThemedView>
-                );
-              })
+    <ThemedView style={[styles.container, { backgroundColor }]}>
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        {/* Header */}
+        <View style={styles.header}>
+          <ThemedText style={styles.title}>Profile</ThemedText>
+          {!isEditing && (
+            <TouchableOpacity
+              style={[styles.editButton, { borderColor }]}
+              onPress={handleEditPress}
+            >
+              <Edit3 size={20} color={iconColor} />
+              <ThemedText style={styles.editButtonText}>Edit</ThemedText>
+            </TouchableOpacity>
           )}
-        </ThemedView>
+        </View>
 
-        {/* Vehicles Section */}
-        {isOwner && (
-          <ThemedView style={{ marginTop: 24 }}>
-            <ThemedText style={styles.sectionTitle}>Your Vehicles</ThemedText>
-            <ThemedView style={styles.vehicleGrid}>
-              {myVehicles.map((v) => (
-                <ThemedView key={v.id} style={styles.vehicleCard}>
-                  <Image
-                    source={{ uri: v.images[0] }}
-                    style={styles.vehicleCardImage}
-                  />
-                  <ThemedView style={{ padding: 8 }}>
-                    <ThemedText style={styles.vehicleTitle}>
-                      {v.title}
+        {/* Profile Card */}
+        <View style={[styles.profileCard, { backgroundColor: cardBackground, borderColor }]}>
+          {/* Avatar Section */}
+          <View style={styles.avatarSection}>
+            <View style={styles.avatarContainer}>
+              <Image source={{ uri: displayImage }} style={styles.avatar} />
+              {isEditing && (
+                <TouchableOpacity style={styles.cameraButton} onPress={pickImage}>
+                  <Camera size={16} color="#fff" />
+                </TouchableOpacity>
+              )}
+            </View>
+            
+            <View style={styles.userInfo}>
+              <ThemedText style={styles.userName}>{profileData.name}</ThemedText>
+              <ThemedText style={[styles.userRole, { color: iconColor }]}>
+                {profileData.role.charAt(0).toUpperCase() + profileData.role.slice(1)}
+              </ThemedText>
+            </View>
+          </View>
+
+          {/* Form Fields */}
+          <View style={styles.formSection}>
+            {isEditing ? (
+              <>
+                <Input
+                  label="Full Name"
+                  value={formData.name}
+                  onChangeText={(text) => setFormData(prev => ({ ...prev, name: text }))}
+                  placeholder="Enter your full name"
+                  icon={<UserIcon size={20} color={iconColor} />}
+                />
+                
+                <Input
+                  label="Phone Number"
+                  value={formData.phone}
+                  onChangeText={(text) => setFormData(prev => ({ ...prev, phone: text }))}
+                  placeholder="Enter your phone number"
+                  keyboardType="phone-pad"
+                  icon={<Phone size={20} color={iconColor} />}
+                />
+                
+                <Input
+                  label="Bio"
+                  value={formData.bio}
+                  onChangeText={(text) => setFormData(prev => ({ ...prev, bio: text }))}
+                  placeholder="Tell us about yourself"
+                  multiline
+                  numberOfLines={3}
+                  icon={<FileText size={20} color={iconColor} />}
+                />
+              </>
+            ) : (
+              <>
+                <View style={styles.fieldContainer}>
+                  <View style={styles.fieldHeader}>
+                    <UserIcon size={20} color={iconColor} />
+                    <ThemedText style={[styles.fieldLabel, { color: iconColor }]}>
+                      Full Name
                     </ThemedText>
-                    <ThemedText style={styles.vehiclePrice}>
-                      LKR {v.pricePerDay}/day
+                  </View>
+                  <ThemedText style={styles.fieldValue}>{profileData.name}</ThemedText>
+                </View>
+
+                <View style={styles.fieldContainer}>
+                  <View style={styles.fieldHeader}>
+                    <Mail size={20} color={iconColor} />
+                    <ThemedText style={[styles.fieldLabel, { color: iconColor }]}>
+                      Email
                     </ThemedText>
-                  </ThemedView>
-                </ThemedView>
-              ))}
+                  </View>
+                  <ThemedText style={styles.fieldValue}>{profileData.email}</ThemedText>
+                </View>
 
-              {/* Add Vehicle Button */}
-              <TouchableOpacity
-                style={[styles.addVehicleCard, { borderColor }]}
-                onPress={() => router.push("/add-vehicle")} // Updated line
-              >
-                <Plus size={28} color="#6b7280" />
-                <ThemedText
-                  style={{
-                    marginTop: 8,
-                    color: "#374151",
-                    textAlign: "center",
-                  }}
-                >
-                  Add New Vehicle
-                </ThemedText>
-              </TouchableOpacity>
-            </ThemedView>
-          </ThemedView>
-        )}
+                <View style={styles.fieldContainer}>
+                  <View style={styles.fieldHeader}>
+                    <Phone size={20} color={iconColor} />
+                    <ThemedText style={[styles.fieldLabel, { color: iconColor }]}>
+                      Phone Number
+                    </ThemedText>
+                  </View>
+                  <ThemedText style={styles.fieldValue}>
+                    {profileData.phone || "No phone number added"}
+                  </ThemedText>
+                </View>
 
-        {/* Add Vehicle Modal */}
-        {/* <ModalScreen
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSubmit={handleVehicleSubmit}
-      /> */}
+                <View style={styles.fieldContainer}>
+                  <View style={styles.fieldHeader}>
+                    <FileText size={20} color={iconColor} />
+                    <ThemedText style={[styles.fieldLabel, { color: iconColor }]}>
+                      Bio
+                    </ThemedText>
+                  </View>
+                  <ThemedText style={styles.fieldValue}>
+                    {profileData.bio || "No bio added"}
+                  </ThemedText>
+                </View>
+              </>
+            )}
+          </View>
+
+          {/* Action Buttons */}
+          {isEditing && (
+            <View style={styles.actionButtons}>
+              <Button
+                title="Discard"
+                onPress={handleDiscardPress}
+                variant="secondary"
+                style={styles.discardButton}
+              />
+              <Button
+                title={updating ? "Updating..." : "Update"}
+                onPress={handleUpdateProfile}
+                style={styles.updateButton}
+                disabled={updating}
+              />
+            </View>
+          )}
+        </View>
       </ScrollView>
     </ThemedView>
   );
-};
+}
 
 const styles = StyleSheet.create({
-  container: { padding: 16, paddingBottom: 40 },
-  center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  profileCard: {
-    flexDirection: "row",
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 16,
-    alignItems: "center",
+  container: {
+    flex: 1,
   },
-  avatar: { width: 80, height: 80, borderRadius: 40, marginRight: 16 },
-  welcomeText: { fontSize: 28, fontWeight: "bold" },
-  subtitle: { fontSize: 14, marginTop: 4 },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 12,
+  scrollView: {
+    flex: 1,
   },
-  section: {
-    marginBottom: 28,
-    paddingHorizontal: 4,
-  },
-  card: {
-    padding: 12,
-    borderRadius: 12,
-    marginBottom: 12,
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  bookingCard: {
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 14,
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-  },
-  cardBottom: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 8,
-  },
-  cardBottomColumn: { flex: 1, marginRight: 12 },
-  cardTop: { flexDirection: "row", alignItems: "center", marginBottom: 8 },
-
-  vehicleImage: { width: 48, height: 48, borderRadius: 6, marginRight: 12 },
-  vehicleTitle: { fontSize: 16, fontWeight: "600" },
-  vehicleId: { fontSize: 12 },
-  statusBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 12 },
-  label: { fontSize: 10, marginBottom: 2 },
-  value: { fontSize: 14 },
-  price: { fontWeight: "600" },
-  actions: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    marginTop: 8,
-    gap: 8,
-  },
-  btn: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 6 },
-  approveBtn: { backgroundColor: "#22c55e" },
-  rejectBtn: { backgroundColor: "#ef4444" },
-  cancelBtn: { backgroundColor: "#ca8a04" },
-  btnText: { color: "#fff", fontSize: 14, fontWeight: "500" },
-  vehicleGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
-  vehicleCard: {
-    width: "48%",
-    borderRadius: 12,
-    marginBottom: 12,
-  },
-  vehicleCardImage: {
-    width: "100%",
-    height: 120,
-    borderTopLeftRadius: 12,
-    borderTopRightRadius: 12,
-  },
-  vehiclePrice: { fontSize: 12, marginTop: 2 },
-  addVehicleCard: {
-    width: "48%",
-    height: 120,
-    borderRadius: 12,
-    borderStyle: "dashed",
-    borderWidth: 2,
+  loadingContainer: {
+    flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 12,
   },
-  noBookings: {
-    padding: 16,
-    borderRadius: 12,
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: "center",
     alignItems: "center",
-    marginTop: 8,
+    paddingHorizontal: 20,
   },
-  noBookingsText: {
+  errorText: {
+    fontSize: 16,
+    marginBottom: 20,
+    textAlign: "center",
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 16,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: "700",
+  },
+  editButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  editButtonText: {
+    marginLeft: 8,
     fontSize: 14,
-    fontStyle: "italic",
+    fontWeight: "500",
+  },
+  profileCard: {
+    margin: 20,
+    borderRadius: 16,
+    padding: 24,
+    borderWidth: 1,
+  },
+  avatarSection: {
+    alignItems: "center",
+    marginBottom: 32,
+  },
+  avatarContainer: {
+    position: "relative",
+    marginBottom: 16,
+  },
+  avatar: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+  },
+  cameraButton: {
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    backgroundColor: "#007AFF",
+    borderRadius: 20,
+    width: 40,
+    height: 40,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 3,
+    borderColor: "#fff",
+  },
+  userInfo: {
+    alignItems: "center",
+  },
+  userName: {
+    fontSize: 24,
+    fontWeight: "700",
+    marginBottom: 4,
+  },
+  userRole: {
+    fontSize: 16,
+    fontWeight: "500",
+  },
+  formSection: {
+    marginBottom: 24,
+  },
+  fieldContainer: {
+    marginBottom: 20,
+  },
+  fieldHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  fieldLabel: {
+    fontSize: 14,
+    fontWeight: "500",
+    marginLeft: 8,
+  },
+  fieldValue: {
+    fontSize: 16,
+    lineHeight: 24,
+  },
+  actionButtons: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  discardButton: {
+    flex: 1,
+  },
+  updateButton: {
+    flex: 1,
   },
 });
-export default DashboardClient;
