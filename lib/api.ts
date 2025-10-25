@@ -417,3 +417,79 @@ export async function getBookingById(id: string): Promise<Booking | undefined> {
 //   const booking: Booking = await apiRequest(`/bookings/${id}`);
 //   return booking;
 // }
+
+// Profile API Functions for Backend Integration
+import Constants from 'expo-constants';
+
+const API_BASE_URL = Constants.expoConfig?.extra?.API_BASE_URL || "http://localhost:4000/";
+
+export async function getUserProfile(userId: string, token: string): Promise<User> {
+  try {
+    console.log('Fetching user profile from backend:', `${API_BASE_URL}users/${userId}`);
+    
+    const response = await fetch(`${API_BASE_URL}users/${userId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch user profile: ${response.status} ${response.statusText}`);
+    }
+
+    const userData = await response.json();
+    console.log('User profile fetched successfully:', userData);
+    return userData;
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
+    throw error; // Remove fallback, let the error propagate
+  }
+}
+
+export async function updateUserProfile(
+  userId: string, 
+  token: string, 
+  updateData: { name?: string; phone?: string }, 
+  imageFile?: any
+): Promise<User> {
+  try {
+    console.log('Updating user profile:', userId, updateData);
+    
+    const formData = new FormData();
+    
+    // Add text fields
+    if (updateData.name) formData.append('name', updateData.name);
+    if (updateData.phone) formData.append('phone', updateData.phone);
+    
+    // Add image file if provided
+    if (imageFile) {
+      formData.append('avatar', {
+        uri: imageFile.uri,
+        type: imageFile.type,
+        name: imageFile.name,
+      } as any);
+    }
+
+    const response = await fetch(`${API_BASE_URL}users/${userId}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        // Don't set Content-Type for FormData, let fetch set it
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to update user profile: ${response.status} ${response.statusText}`);
+    }
+
+    const updatedUser = await response.json();
+    console.log('User profile updated successfully:', updatedUser);
+    return updatedUser;
+  } catch (error) {
+    console.error('Error updating user profile:', error);
+    throw error; // Remove fallback, let the error propagate
+  }
+}

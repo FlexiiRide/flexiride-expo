@@ -35,6 +35,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     fontSize: 16,
     fontWeight: "500",
+    color: '#000000',
   },
   inputContainer: {
     flexDirection: "row",

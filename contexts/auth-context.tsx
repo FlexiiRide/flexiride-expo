@@ -26,11 +26,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signIn = useCallback(async (email: string, password: string) => {
     setLoading(true);
     try {
+      console.log('Attempting to sign in with:', email);
+      console.log('API_BASE_URL:', API_BASE_URL);
+      
       const res = await fetch(`${API_BASE_URL}auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
+
+      console.log('Response status:', res.status);
 
       if (!res.ok) {
         const errorData = await res.json();
@@ -39,6 +44,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       const { accessToken: receiveAccessToken, refreshToken: receiveRefreshToken, user: receiveUser } = await res.json();
+      console.log('Login successful, user:', receiveUser);
+      
       setUser(receiveUser);
       setAccessToken(receiveAccessToken);
       setRefreshToken(receiveRefreshToken);
