@@ -1,7 +1,6 @@
-import Constants from "expo-constants";
+import { API_BASE_URL } from './apiConfig';
 
-const API_BASE_URL = Constants.expoConfig?.extra?.API_BASE_URL;
-console.log("API_BASE_URL:", API_BASE_URL);
+console.log("vehicleFetch - API_BASE_URL:", API_BASE_URL);
 
 export interface CreateVehicleInput {
   title: string;

@@ -50,6 +50,7 @@ export default function ProfileScreen() {
   // Form state
   const [formData, setFormData] = useState({
     name: "",
+    bio: "",
   });
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<any>(null);
@@ -69,9 +70,11 @@ export default function ProfileScreen() {
         role: 'client',
         avatarUrl: 'https://picsum.photos/seed/profile/100/100',
         password: '',
+        bio: 'A friendly FlexiRide user',
       });
       setFormData({
         name: 'John Doe',
+        bio: 'A friendly FlexiRide user',
       });
       setLoading(false);
       return;
@@ -83,6 +86,7 @@ export default function ProfileScreen() {
       setProfileData(profile);
       setFormData({
         name: profile.name || "",
+        bio: profile.bio || "",
       });
     } catch (error) {
       showErrorToast("Error", "Failed to load profile data");
@@ -111,6 +115,7 @@ export default function ProfileScreen() {
             setIsEditing(false);
             setFormData({
               name: profileData?.name || "",
+              bio: profileData?.bio || "",
             });
             setSelectedImage(null);
             setImageFile(null);
@@ -253,6 +258,13 @@ export default function ProfileScreen() {
                 {profileData.role.charAt(0).toUpperCase() + profileData.role.slice(1)}
               </ThemedText>
               
+              {/* Bio Section */}
+              {profileData.bio && (
+                <View style={styles.bioSection}>
+                  <ThemedText style={styles.bioText}>{profileData.bio}</ThemedText>
+                </View>
+              )}
+              
               {/* Rating Section */}
               <View style={styles.ratingSection}>
                 <Star size={16} color="#fbbf24" fill="#fbbf24" />
@@ -273,7 +285,21 @@ export default function ProfileScreen() {
                       value={formData.name}
                       onChangeText={(text) => setFormData(prev => ({ ...prev, name: text }))}
                       placeholder="Enter your full name"
-                      style={{ color: '#000000', backgroundColor: '#f8f7ff' }}
+                      containerStyle={styles.purpleInputContainer}
+                      style={styles.purpleInput}
+                    />
+                  </View>
+                  
+                  <View style={styles.inputSection}>
+                    <Input
+                      label="Bio"
+                      value={formData.bio}
+                      onChangeText={(text) => setFormData(prev => ({ ...prev, bio: text }))}
+                      placeholder="Tell us about yourself..."
+                      multiline={true}
+                      numberOfLines={3}
+                      containerStyle={styles.purpleInputContainer}
+                      style={[styles.purpleInput, styles.bioInput]}
                     />
                   </View>
                   
@@ -283,7 +309,8 @@ export default function ProfileScreen() {
                       value={profileData.email}
                       placeholder="Email address"
                       editable={false}
-                      style={[styles.disabledInput, { color: '#6b7280', backgroundColor: '#f3f4f6' }]}
+                      containerStyle={[styles.purpleInputContainer, styles.disabledInputContainer]}
+                      style={[styles.disabledInput]}
                     />
                     <ThemedText style={styles.helpText}>🔒 Email cannot be changed</ThemedText>
                   </View>
@@ -436,6 +463,17 @@ const styles = StyleSheet.create({
     color: '#64748b',
     marginBottom: 8,
   },
+  bioSection: {
+    marginBottom: 12,
+    paddingHorizontal: 16,
+  },
+  bioText: {
+    fontSize: 14,
+    color: '#475569',
+    textAlign: 'center',
+    lineHeight: 20,
+    fontStyle: 'italic',
+  },
   ratingSection: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -477,10 +515,19 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   disabledInput: {
-    opacity: 0.8,
-    backgroundColor: '#f1f0ff',
-    borderColor: '#e9e5ff',
-    color: '#000000',
+    opacity: 0.6,
+    backgroundColor: '#f1f5f9',
+    borderColor: '#cbd5e1',
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    color: '#1f2937',
+  },
+  disabledInputContainer: {
+    backgroundColor: '#f3e8ff',
+    opacity: 0.7,
+    borderColor: '#cbd5e1',
+    borderWidth: 1,
+    borderStyle: 'dashed',
   },
   helpText: {
     fontSize: 12,
@@ -516,5 +563,16 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 14,
     fontWeight: '600',
+  },
+  purpleInput: {
+    backgroundColor: '#f3e8ff',
+    color: '#000000',
+  },
+  purpleInputContainer: {
+    backgroundColor: '#f3e8ff',
+  },
+  bioInput: {
+    minHeight: 80,
+    textAlignVertical: 'top',
   },
 });

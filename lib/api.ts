@@ -419,9 +419,7 @@ export async function getBookingById(id: string): Promise<Booking | undefined> {
 // }
 
 // Profile API Functions for Backend Integration
-import Constants from 'expo-constants';
-
-const API_BASE_URL = Constants.expoConfig?.extra?.API_BASE_URL || "http://localhost:4000/";
+import { API_BASE_URL } from './apiConfig';
 
 export async function getUserProfile(userId: string, token: string): Promise<User> {
   try {
@@ -451,7 +449,7 @@ export async function getUserProfile(userId: string, token: string): Promise<Use
 export async function updateUserProfile(
   userId: string, 
   token: string, 
-  updateData: { name?: string; phone?: string }, 
+  updateData: { name?: string; phone?: string; bio?: string }, 
   imageFile?: any
 ): Promise<User> {
   try {
@@ -462,6 +460,7 @@ export async function updateUserProfile(
     // Add text fields
     if (updateData.name) formData.append('name', updateData.name);
     if (updateData.phone) formData.append('phone', updateData.phone);
+    if (updateData.bio) formData.append('bio', updateData.bio);
     
     // Add image file if provided
     if (imageFile) {

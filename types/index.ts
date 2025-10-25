@@ -6,6 +6,7 @@ export type User = {
   role: 'owner' | 'client';
   avatarUrl: string;
   password: string;
+  bio?: string;
 };
 
 export type Vehicle = {

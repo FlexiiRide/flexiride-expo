@@ -6,9 +6,10 @@ import { useThemeColor } from "@/hooks/use-theme-color";
 type CustomInputProps = TextInputProps & {
   label?: string;
   icon?: React.ReactNode;
+  containerStyle?: any;
 };
 
-export function Input({ label, icon, ...props }: CustomInputProps) {
+export function Input({ label, icon, containerStyle, ...props }: CustomInputProps) {
   const inputBackground = useThemeColor(
     { light: "#f0f0f0", dark: "#343c3fff" }, // custom dark color
     "background"
@@ -18,7 +19,11 @@ export function Input({ label, icon, ...props }: CustomInputProps) {
     <View style={styles.container}>
       {label && <ThemedText style={styles.label}>{label}</ThemedText>}
       <View
-        style={[styles.inputContainer, { backgroundColor: inputBackground }]}
+        style={[
+          styles.inputContainer, 
+          { backgroundColor: inputBackground },
+          containerStyle
+        ]}
       >
         {icon && <View style={styles.icon}>{icon}</View>}
         <TextInput style={styles.input} {...props} />
